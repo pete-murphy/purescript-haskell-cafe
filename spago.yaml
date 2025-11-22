@@ -4,7 +4,9 @@ package:
     - aff
     - avar
     - console
+    - datetime
     - effect
+    - js-date
     - js-intl
     - now
     - prelude

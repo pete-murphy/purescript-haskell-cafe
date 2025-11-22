@@ -1,3 +1,4 @@
-import("../output/Worker/index.js").then((module) => module.main());
+// @ts-ignore
+import * as Worker from "../output/Worker/index.js";
 
-console.log("Worker started");
+Worker.main();
