@@ -1,0 +1,18 @@
+package:
+  name: 2025-11-20-sandbox
+  dependencies:
+    - aff
+    - avar
+    - console
+    - effect
+    - js-intl
+    - now
+    - prelude
+    - string-parsers
+  test:
+    main: Test.Main
+    dependencies: []
+workspace:
+  packageSet:
+    registry: 43.3.0
+  extraPackages: {}
