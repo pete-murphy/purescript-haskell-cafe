@@ -13,6 +13,7 @@ package:
     - js-promise
     - js-promise-aff
     - now
+    - parsing
     - prelude
     - string-parsers
   test:

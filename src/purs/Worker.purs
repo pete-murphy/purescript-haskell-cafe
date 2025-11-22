@@ -20,7 +20,6 @@ import StringParser as StringParser
 main :: Effect Unit
 main = do
   Console.log "Worker started in PureScript"
-  sendMessage "Hello from PureScript"
   Aff.launchAff_ do
     start <- liftEffect Now.now
     sample <- Promise.Aff.toAffE fetchSample
@@ -35,6 +34,7 @@ main = do
       Right { result, suffix } -> do
         Console.logShow result
         Console.logShow suffix
+        liftEffect (sendMessage (show result))
 
 foreign import sendMessage :: String -> Effect Unit
 

@@ -8,7 +8,7 @@ export const debugMessage = (message) => {
 
 export const fetchSample = () => {
   let sample = "";
-  return fetch(`/haskell-cafe/2011-January.txt.gz`)
+  return fetch(`/haskell-cafe/2005-August.txt.gz`)
     .then((response) =>
       response.body
         .pipeThrough(new DecompressionStream("gzip"))

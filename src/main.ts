@@ -7,7 +7,8 @@ const worker = new Worker(new URL("./worker.ts", import.meta.url), {
   type: "module",
 });
 worker.onmessage = (event) => {
-  console.log(event.data);
+  document.body.appendChild(document.createElement("pre")).textContent =
+    event.data;
 };
 console.log("Here");
 
