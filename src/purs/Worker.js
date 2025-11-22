@@ -1,3 +1,31 @@
+import { PGlite } from "@electric-sql/pglite";
+
+export const pgliteInstance = () => new PGlite();
+
+export function createSchema(pglite) {
+  return () =>
+    pglite.exec(`
+    CREATE TABLE IF NOT EXISTS todo (
+      id SERIAL PRIMARY KEY,
+      task TEXT,
+      done BOOLEAN DEFAULT false
+    );
+    INSERT INTO todo (task, done) VALUES ('Install PGlite from NPM', true);
+    INSERT INTO todo (task, done) VALUES ('Load PGlite', true);
+    INSERT INTO todo (task, done) VALUES ('Create a table', true);
+    INSERT INTO todo (task, done) VALUES ('Insert some data', true);
+    INSERT INTO todo (task) VALUES ('Update a task');
+`);
+}
+
+export function queryTodos(pglite) {
+  return () => pglite.exec(`SELECT * FROM todo;`);
+}
+
+const pglite = pgliteInstance();
+createSchema(pglite)();
+queryTodos(pglite)().then((result) => console.log(result));
+
 export const sendMessage = (message) => () => {
   self.postMessage(message);
 };
