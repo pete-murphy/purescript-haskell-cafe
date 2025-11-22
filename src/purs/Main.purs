@@ -11,10 +11,12 @@ import Data.String as String
 import Effect (Effect)
 
 foreign import data Worker :: Type
+foreign import worker :: Effect Worker
 
-main :: Worker -> Effect Unit
-main worker = do
-  onMessages worker do
+main :: Effect Unit
+main = do
+  worker' <- worker
+  onMessages worker' do
     ( map
         ( \message ->
             String.joinWith "\n"

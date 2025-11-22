@@ -1,3 +1,9 @@
+export function worker() {
+  return new Worker(new URL("../../src/worker.ts", import.meta.url), {
+    type: "module",
+  });
+}
+
 export function onMessages(worker) {
   return (callback) => {
     return () =>
