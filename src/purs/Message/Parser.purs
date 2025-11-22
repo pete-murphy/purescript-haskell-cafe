@@ -16,6 +16,8 @@ import Data.List.Types (NonEmptyList(..))
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.NonEmpty ((:|))
+import Data.Semigroup.Foldable (fold1)
+import Data.String (CodePoint)
 import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
 import Message (Header, Message)
@@ -24,7 +26,8 @@ import MessageID as MessageID
 import Parsing (ParseError, Parser, fail)
 import Parsing as Parsing
 import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, try)
-import Parsing.String (anyChar, char, eof, satisfy, string)
+import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
+import Parsing.String.Basic (skipSpaces)
 
 run :: String -> Either ParseError (List Message)
 run input =
@@ -69,7 +72,7 @@ dateP = do
 
 subjectP :: Parser String String
 subjectP = do
-  _ <- string "Subject: [Haskell-cafe] "
+  _ <- string "Subject: [Haskell-cafe]" <* skipSpaces
   lineRemainderP
 
 inReplyToP :: Parser String (NonEmptyList MessageID)
@@ -81,10 +84,10 @@ messageIDsP :: Parser String (NonEmptyList MessageID)
 messageIDsP = do
   prefix <- singleLineRemainder
   rest <- many (hspace1 *> singleLineRemainder)
-  pure (NonEmptyList (prefix :| rest))
+  pure (fold1 (prefix :| rest))
   where
   singleLineRemainder = do
-    MessageID.parser <* string "\n"
+    many1Till (skipSpaces *> MessageID.parser) (string "\n")
 
 referencesP :: Parser String (NonEmptyList MessageID)
 referencesP = do
@@ -104,8 +107,8 @@ contentP = do
 
 anyLineP :: Parser String String
 anyLineP = do
-  chars <- manyTill anyChar (string "\n")
-  pure (stringFromChars chars)
+  chars <- manyTill anyCodePoint (string "\n")
+  pure (stringFromCodePoints chars)
 
 headerP :: Parser String Header
 headerP = do
@@ -134,3 +137,6 @@ hspace1 = void (many1 (satisfy \c -> c == ' ' || c == '\t'))
 
 stringFromChars :: forall f. Foldable f => f Char -> String
 stringFromChars chars = String.CodeUnits.fromCharArray (Array.fromFoldable chars)
+
+stringFromCodePoints :: forall f. Foldable f => f CodePoint -> String
+stringFromCodePoints codePoints = String.fromCodePointArray (Array.fromFoldable codePoints)

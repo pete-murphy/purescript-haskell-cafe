@@ -8,7 +8,6 @@ export function onMessages(worker) {
 }
 
 export function addToDOM(message) {
-  console.log("Adding to DOM", message);
   return () => {
     document.body.appendChild(document.createElement("pre")).textContent =
       message;
