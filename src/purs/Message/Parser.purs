@@ -56,6 +56,7 @@ lineRemainderP = do
   prefix <- singleLineRemainder
   rest <- many (hspace1 *> singleLineRemainder)
   let allParts = Array.fromFoldable (prefix : rest)
+  -- TODO: Sometimes this is adding a space in the middle of a word
   pure (String.joinWith " " allParts)
   where
   singleLineRemainder = do
@@ -75,7 +76,7 @@ subjectP = do
   _ <- string "Subject: "
   _ <- optional (string "[Haskell-cafe]")
   skipSpaces
-  lineRemainderP
+  decodeRFC2047 <$> lineRemainderP
 
 inReplyToP :: Parser String (NonEmptyList MessageID)
 inReplyToP = do
@@ -89,7 +90,7 @@ messageIDsP = do
   pure (fold1 (prefix :| rest))
   where
   singleLineRemainder = do
-    many1Till (MessageID.parser <* optional (try skipParentheses)) (many hspace *> string "\n")
+    many1Till (MessageID.parser <* optional (try skipParentheses) <* many hspace) (string "\n")
 
 skipParentheses :: Parser String Unit
 skipParentheses = do

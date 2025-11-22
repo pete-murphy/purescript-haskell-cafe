@@ -179,6 +179,50 @@ Dylan Thurston writes:
 Dylan
 """
 
+example7 :: String
+example7 =
+  """From maihem at maihem.org  Sat Jan  1 17:47:37 2005
+From: maihem at maihem.org (Tristan Wibberley)
+Date: Sat Jan  1 17:38:25 2005
+Subject: [Haskell-cafe] Re: Haskell Pangolins
+In-Reply-To: <20041230083129.GA2920@students.mimuw.edu.pl>
+References: <MCEBKKALDLDAPJPPPKOHOELHCJAA.dominic.fox1@ntlworld.com>	<200412291954.15855.p.turner@computer.org>
+	<20041230083129.GA2920@students.mimuw.edu.pl>
+Message-ID: <cr79a9$pd4$1@sea.gmane.org>
+
+Tomasz Zielonka wrote:
+"""
+
+example8 :: String
+example8 =
+  """From romildo@urano.iceb.ufop.br  Tue Oct 10 18:49:59 2000
+Date: Tue, 10 Oct 2000 15:49:59 -0200
+From: =?iso-8859-1?Q?Jos=E9_Romildo_Malaquias?= romildo@urano.iceb.ufop.br
+Subject: Haskell Problem
+
+<PRE>On Tue, Oct 10, 2000 at 07:11:14PM +0100, Graeme Turner wrote:
+&gt;<i> The basic aim is to read in a file of data, sort it and then display it.
+</I>&gt;<i> 
+</I>&gt;<i> I have managed to get a sort to function properly but I am having trouble
+</I>&gt;<i> with reading in the data from the file. I have managed to use the
+</I>&gt;<i> hGetContents and hGetLine methods of the IO library to read the data in but
+</I>&gt;<i> when it is read in, it is stored as an IO String type.
+</I>&gt;<i> 
+</I>&gt;<i> I would like to convert the input from the file into one large string so I
+</I>&gt;<i> can process it before sorting it.
+</I>&gt;<i> 
+</I>&gt;<i> After reading the whole file into a variable, how do I then convert that IO
+</I>&gt;<i> String to a String?
+</I>
+You do not have to convert from the abstract data type IO String into String.
+You can access the string encapsulated in such abstract data type
+using monad operations. The type IO String is the type of the computations
+that perform input/output and produces a string as their result. You
+can pass this result as an argument to a function of type String -&gt; IO a
+which may do the desired manipulation on the string and may also perform
+some more input/output and should produce a result of type a.
+"""
+
 -- Helper function to parse a MessageID from a string (with angle brackets)
 parseMessageID :: String -> MessageID
 parseMessageID str =
@@ -444,3 +488,14 @@ spec = do
         case Message.Parser.run example6 of
           Right messages -> List.length messages `shouldEqual` 1
           Left err -> fail (formatParseError example6 err)
+
+    describe "example 7" do
+      it "parses successfully" do
+        case Message.Parser.run example7 of
+          Right _ -> pure unit
+          Left err -> fail (formatParseError example7 err)
+
+      it "parses exactly one message" do
+        case Message.Parser.run example7 of
+          Right messages -> List.length messages `shouldEqual` 1
+          Left err -> fail (formatParseError example7 err)

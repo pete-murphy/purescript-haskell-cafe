@@ -2,7 +2,10 @@ export function onMessages(worker) {
   return (callback) => {
     return () =>
       (worker.onmessage = (event) => {
-        callback(event.data)();
+        if (event.data.type === "fetch") {
+          document.body.appendChild(document.createElement("h1")).textContent =
+            event.data.message;
+        } else callback(event.data.message)();
       });
   };
 }
