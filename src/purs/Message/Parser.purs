@@ -25,7 +25,7 @@ import MessageID (MessageID)
 import MessageID as MessageID
 import Parsing (ParseError, Parser, fail)
 import Parsing as Parsing
-import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, try)
+import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, optional, try)
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
@@ -87,7 +87,15 @@ messageIDsP = do
   pure (fold1 (prefix :| rest))
   where
   singleLineRemainder = do
-    many1Till (skipSpaces *> MessageID.parser) (string "\n")
+    many1Till (skipSpaces *> MessageID.parser <* optional (try skipParentheses)) (string "\n")
+
+skipParentheses :: Parser String Unit
+skipParentheses = do
+  skipSpaces
+  _ <- string "("
+  _ <- many (satisfy (_ /= ')'))
+  _ <- string ")"
+  pure unit
 
 referencesP :: Parser String (NonEmptyList MessageID)
 referencesP = do

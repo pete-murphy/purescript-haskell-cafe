@@ -7,9 +7,11 @@ import Data.Either (Either(..))
 import Data.List (List(..), (:))
 import Data.List as List
 import Data.Maybe (Maybe(..))
+import Data.String.CodeUnits as String
 import Message.Parser as Message.Parser
 import MessageID (MessageID)
 import MessageID as MessageID
+import Parsing (ParseError, Position(..), parseErrorMessage, parseErrorPosition)
 import Parsing as Parsing
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
 import Test.Spec (Spec, describe, it)
@@ -45,7 +47,7 @@ For example, splits1 [1,2,3] is
 
 example2 :: String
 example2 =
-  """rom berdario at gmail.com  Fri Aug  1 00:05:26 2014
+  """From berdario at gmail.com  Fri Aug  1 00:05:26 2014
 From: berdario at gmail.com (Dario Bertini)
 Date: Thu, 31 Jul 2014 17:05:26 -0700
 Subject: [Haskell-cafe] Tor project
@@ -164,6 +166,18 @@ parseMessageID str =
     Right msgID -> msgID
     Left _ -> unsafeCrashWith "Failed to parse MessageID in test"
 
+-- Helper function to format parse errors for test failures
+formatParseError :: String -> ParseError -> String
+formatParseError input err =
+  let
+    msg = parseErrorMessage err
+    Position { index } = parseErrorPosition err
+    contextStart = max 0 (index - 40)
+    contextEnd = min (String.length input) (index + 40)
+    context = String.slice contextStart contextEnd input
+  in
+    "Parse error: " <> msg <> " at position " <> show index <> "\nContext: " <> context
+
 spec :: Spec Unit
 spec = do
   describe "Message.Parser" do
@@ -171,65 +185,65 @@ spec = do
       it "parses successfully" do
         case Message.Parser.run example1 of
           Right _ -> pure unit
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
       it "parses exactly one message" do
         case Message.Parser.run example1 of
           Right messages -> List.length messages `shouldEqual` 1
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
       it "extracts author correctly" do
         case Message.Parser.run example1 of
           Right (message : _) -> message.author `shouldEqual` "Todd Wilson"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
       it "extracts subject correctly" do
         case Message.Parser.run example1 of
           Right (message : _) -> message.subject `shouldEqual` "Performance best practices"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
       it "extracts messageID correctly" do
         case Message.Parser.run example1 of
           Right (message : _) -> message.messageID `shouldEqual` parseMessageID "<CA+-99oLpRrX7jgDru6=xf=U3qo9SGtPK33j2rPX8eON4mrLagg@mail.gmail.com>"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
       it "extracts content correctly" do
         case Message.Parser.run example1 of
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 1"
+          Left err -> fail (formatParseError example1 err)
 
     describe "example 2" do
       it "parses successfully" do
         case Message.Parser.run example2 of
           Right _ -> pure unit
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "parses exactly one message" do
         case Message.Parser.run example2 of
           Right messages -> List.length messages `shouldEqual` 1
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts author correctly" do
         case Message.Parser.run example2 of
           Right (message : _) -> message.author `shouldEqual` "Dario Bertini"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts subject correctly" do
         case Message.Parser.run example2 of
           Right (message : _) -> message.subject `shouldEqual` "Tor project"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts messageID correctly" do
         case Message.Parser.run example2 of
           Right (message : _) -> message.messageID `shouldEqual` parseMessageID "<CAFdyfB2_bcuLeE3EkidDkdRzYMr=Xfw_fBsLFgS1ygwQpM3a=g@mail.gmail.com>"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts inReplyTo correctly" do
         case Message.Parser.run example2 of
@@ -237,48 +251,48 @@ spec = do
             Array.length message.inReplyTo `shouldEqual` 1
             Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53DAB0E9.70207@power.com.pl>")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts references correctly" do
         case Message.Parser.run example2 of
           Right (message : _) -> Array.length message.references `shouldEqual` 6
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
       it "extracts content correctly" do
         case Message.Parser.run example2 of
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 2"
+          Left err -> fail (formatParseError example2 err)
 
     describe "example 3" do
       it "parses successfully" do
         case Message.Parser.run example3 of
           Right _ -> pure unit
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "parses exactly one message" do
         case Message.Parser.run example3 of
           Right messages -> List.length messages `shouldEqual` 1
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts author correctly" do
         case Message.Parser.run example3 of
           Right (message : _) -> message.author `shouldEqual` "Andreas Reuleaux"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts subject correctly" do
         case Message.Parser.run example3 of
-          Right (message : _) -> message.subject `shouldEqual` "parsec: problem combining lookAhead with many1\n\t(bug?)"
+          Right (message : _) -> message.subject `shouldEqual` "parsec: problem combining lookAhead with many1 (bug?)"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts messageID correctly" do
         case Message.Parser.run example3 of
           Right (message : _) -> message.messageID `shouldEqual` parseMessageID "<87y4v0z2es.fsf@web.de>"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts inReplyTo correctly" do
         case Message.Parser.run example3 of
@@ -286,48 +300,48 @@ spec = do
             Array.length message.inReplyTo `shouldEqual` 1
             Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMmzbfWA9S3YGjJ1iQaa72rKZyuV4psvEP3LsQuDGC3QED-YVw@mail.gmail.com>")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts references correctly" do
         case Message.Parser.run example3 of
           Right (message : _) -> Array.length message.references `shouldEqual` 1
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
       it "extracts content correctly" do
         case Message.Parser.run example3 of
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 3"
+          Left err -> fail (formatParseError example3 err)
 
     describe "example 4" do
       it "parses successfully" do
         case Message.Parser.run example4 of
           Right _ -> pure unit
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "parses exactly one message" do
         case Message.Parser.run example4 of
           Right messages -> List.length messages `shouldEqual` 1
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts author correctly" do
         case Message.Parser.run example4 of
           Right (message : _) -> message.author `shouldEqual` "Chris Warburton"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts subject correctly" do
         case Message.Parser.run example4 of
           Right (message : _) -> message.subject `shouldEqual` "The Good, the Bad and the GUI"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts messageID correctly" do
         case Message.Parser.run example4 of
           Right (message : _) -> message.messageID `shouldEqual` parseMessageID "<864mxi6on0.fsf@gmail.com>"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts inReplyTo correctly" do
         case Message.Parser.run example4 of
@@ -335,48 +349,48 @@ spec = do
             Array.length message.inReplyTo `shouldEqual` 1
             Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53E9C868.9090406@power.com.pl>")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts references correctly" do
         case Message.Parser.run example4 of
           Right (message : _) -> Array.length message.references `shouldEqual` 3
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
       it "extracts content correctly" do
         case Message.Parser.run example4 of
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 4"
+          Left err -> fail (formatParseError example4 err)
 
     describe "example 5" do
       it "parses successfully" do
         case Message.Parser.run example5 of
           Right _ -> pure unit
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "parses exactly one message" do
         case Message.Parser.run example5 of
           Right messages -> List.length messages `shouldEqual` 1
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts author correctly" do
         case Message.Parser.run example5 of
           Right (message : _) -> message.author `shouldEqual` "Chris Warburton"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts subject correctly" do
         case Message.Parser.run example5 of
-          Right (message : _) -> message.subject `shouldEqual` "Does the lambda calculus have provisions for\n\tI/O? State can be done with free variables."
+          Right (message : _) -> message.subject `shouldEqual` "Does the lambda calculus have provisions for I/O? State can be done with free variables."
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts messageID correctly" do
         case Message.Parser.run example5 of
           Right (message : _) -> message.messageID `shouldEqual` parseMessageID "<86k36b5s4g.fsf@gmail.com>"
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts inReplyTo correctly" do
         case Message.Parser.run example5 of
@@ -384,16 +398,16 @@ spec = do
             Array.length message.inReplyTo `shouldEqual` 1
             Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMLKXynJhDV-WA-5Yb1=vVHoy5mwL+TZODXMKN182Ch5+3VuQg@mail.gmail.com>")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts references correctly" do
         case Message.Parser.run example5 of
           Right (message : _) -> Array.length message.references `shouldEqual` 1
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
 
       it "extracts content correctly" do
         case Message.Parser.run example5 of
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
-          Left _ -> fail "Failed to parse example 5"
+          Left err -> fail (formatParseError example5 err)
