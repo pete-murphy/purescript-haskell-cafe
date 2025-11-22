@@ -159,6 +159,26 @@ Lambda Calculus can't do IO "internally"; we can't mutate variables,
 whether or not they're free.
 """
 
+example6 :: String
+example6 =
+  """From nickgrey at softhome.net  Mon Feb  2 16:26:23 2004
+From: nickgrey at softhome.net (nickgrey@softhome.net)
+Date: Mon Feb  2 18:26:29 2004
+Subject: [Haskell-cafe] Re: Storing functional values
+In-Reply-To: <20040201211232.GC18596@lotus.bostoncoop.net> 
+References: <courier.401A84A6.00003DAE@softhome.net>
+            <20040201211232.GC18596@lotus.bostoncoop.net>
+Message-ID: <courier.401EDC9F.00007478@softhome.net>
+
+Dylan Thurston writes: 
+
+> It seems like there are two things you want to do with these
+> functional closures: save them to disk, and run them as functions.
+> Why not combine these two into a type class?
+
+Dylan
+"""
+
 -- Helper function to parse a MessageID from a string (with angle brackets)
 parseMessageID :: String -> MessageID
 parseMessageID str =
@@ -174,7 +194,9 @@ formatParseError input err =
     Position { index } = parseErrorPosition err
     contextStart = max 0 (index - 40)
     contextEnd = min (String.length input) (index + 40)
-    context = String.slice contextStart contextEnd input
+    start = String.slice contextStart index input
+    end = String.slice index contextEnd input
+    context = start <> "|" <> end
   in
     "Parse error: " <> msg <> " at position " <> show index <> "\nContext: " <> context
 
@@ -411,3 +433,14 @@ spec = do
           Right (message : _) -> message.content `shouldSatisfy` (_ /= "")
           Right Nil -> fail "Expected at least one message"
           Left err -> fail (formatParseError example5 err)
+
+    describe "example 6" do
+      it "parses successfully" do
+        case Message.Parser.run example6 of
+          Right _ -> pure unit
+          Left err -> fail (formatParseError example6 err)
+
+      it "parses exactly one message" do
+        case Message.Parser.run example6 of
+          Right messages -> List.length messages `shouldEqual` 1
+          Left err -> fail (formatParseError example6 err)

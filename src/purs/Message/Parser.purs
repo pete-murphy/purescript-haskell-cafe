@@ -12,7 +12,7 @@ import Data.Foldable (class Foldable)
 import Data.JSDate (JSDate)
 import Data.JSDate as JSDate
 import Data.List (List, (:))
-import Data.List.Types (NonEmptyList(..))
+import Data.List.Types (NonEmptyList)
 import Data.Maybe (Maybe(..))
 import Data.Maybe as Maybe
 import Data.NonEmpty ((:|))
@@ -72,7 +72,9 @@ dateP = do
 
 subjectP :: Parser String String
 subjectP = do
-  _ <- string "Subject: [Haskell-cafe]" <* skipSpaces
+  _ <- string "Subject: "
+  _ <- optional (string "[Haskell-cafe]")
+  skipSpaces
   lineRemainderP
 
 inReplyToP :: Parser String (NonEmptyList MessageID)
@@ -87,7 +89,7 @@ messageIDsP = do
   pure (fold1 (prefix :| rest))
   where
   singleLineRemainder = do
-    many1Till (skipSpaces *> MessageID.parser <* optional (try skipParentheses)) (string "\n")
+    many1Till (MessageID.parser <* optional (try skipParentheses)) (many hspace *> string "\n")
 
 skipParentheses :: Parser String Unit
 skipParentheses = do
@@ -141,7 +143,10 @@ anyCharButNewline :: Parser String Char
 anyCharButNewline = satisfy (_ /= '\n')
 
 hspace1 :: Parser String Unit
-hspace1 = void (many1 (satisfy \c -> c == ' ' || c == '\t'))
+hspace1 = void (many1 hspace)
+
+hspace :: Parser String Unit
+hspace = void (satisfy \c -> c == ' ' || c == '\t')
 
 stringFromChars :: forall f. Foldable f => f Char -> String
 stringFromChars chars = String.CodeUnits.fromCharArray (Array.fromFoldable chars)
