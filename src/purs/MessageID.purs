@@ -15,6 +15,7 @@ newtype MessageID = MessageID String
 
 derive newtype instance Eq MessageID
 derive newtype instance Ord MessageID
+derive newtype instance Show MessageID
 
 parser :: Parser String MessageID
 parser = do

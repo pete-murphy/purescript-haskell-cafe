@@ -5,12 +5,16 @@
 
   color-scheme: light dark;
   color: light-dark(black, white);
-  background-color: #242424;
+  background-color: light-dark(#f0f0f0, #242424);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+pre {
+  font-family: "SF Mono", monospace;
 }
 
 a {
@@ -27,7 +31,7 @@ body {
   padding: 2rem;
 }
 
-@media (prefers-color-scheme: light) {
+/* @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
     background-color: #ffffff;
@@ -38,4 +42,4 @@ body {
   button {
     background-color: #f9f9f9;
   }
-}
+} */

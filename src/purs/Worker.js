@@ -8,7 +8,7 @@ export const debugMessage = (message) => () => {
 
 export const fetchSample = () => {
   // return Promise.resolve(sample);
-  return fetch(`/haskell-cafe/2014-August.txt`).then((response) =>
+  return fetch(`/haskell-cafe/2019-August.txt`).then((response) =>
     response.text()
   );
   // let sample = "";
