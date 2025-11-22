@@ -7,7 +7,6 @@ import Prelude
 import Effect (Effect)
 import Effect.Aff as Aff
 import Effect.Class.Console as Console
-import Message.Parser (Message)
 import Message.Parser as Message.Parser
 import Promise (Promise)
 import Promise.Aff as Promise.Aff

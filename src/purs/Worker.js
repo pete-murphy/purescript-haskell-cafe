@@ -7,9 +7,21 @@ export const debugMessage = (message) => {
 };
 
 export const fetchSample = () => {
-  return fetch(`/haskell-cafe/2018-October.txt`).then((response) =>
-    response.text()
-  );
+  let sample = "";
+  return fetch(`/haskell-cafe/2011-January.txt.gz`)
+    .then((response) =>
+      response.body
+        .pipeThrough(new DecompressionStream("gzip"))
+        .pipeThrough(new TextDecoderStream())
+        .pipeTo(
+          new WritableStream({
+            write(chunk) {
+              sample += chunk;
+            },
+          })
+        )
+    )
+    .then(() => sample);
   // return Promise.resolve(sample);
 };
 

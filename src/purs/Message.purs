@@ -1,22 +1,22 @@
 module Message where
 
-import Prelude
-
+import Data.DateTime (DateTime)
 import Data.Maybe (Maybe)
 
--- Header type
-type Header =
+type HeaderRows =
   ( author :: String
   , subject :: String
   , messageID :: String
   , inReplyTo :: Maybe String
   , references :: Maybe String
-  , date :: String
+  , date :: DateTime
   )
 
--- Message type
+type Header =
+  { | HeaderRows }
+
 type Message =
   { content :: String
-  | Header
+  | HeaderRows
   }
 

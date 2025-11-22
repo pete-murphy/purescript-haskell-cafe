@@ -6,11 +6,16 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Data.Array as Array
+import Data.DateTime (DateTime)
 import Data.Either (Either)
 import Data.Foldable (class Foldable)
+import Data.JSDate (JSDate)
+import Data.JSDate as JSDate
 import Data.List (List, (:))
+import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
+import Debug as Debug
 import Message (Header, Message)
 import StringParser
   ( ParseError
@@ -19,6 +24,7 @@ import StringParser
   , anyChar
   , char
   , eof
+  , fail
   , many
   , many1
   , many1Till
@@ -35,6 +41,8 @@ run
   :: String
   -> Either ParseError { result :: List Message, suffix :: PosString }
 run input = StringParser.unParser (many messageP) { position: 0, substring: input }
+
+foreign import parseRFC2822 :: String -> JSDate
 
 preambleP :: Parser Unit
 preambleP = do
@@ -62,19 +70,19 @@ lineRemainderP = do
     chars <- many1Till anyChar (string "\n")
     pure (stringFromChars chars)
 
---| Parse date field
-dateP :: Parser String
+dateP :: Parser DateTime
 dateP = do
   _ <- string "Date: "
-  lineRemainderP
+  lineRemainder <- lineRemainderP
+  case JSDate.toDateTime (parseRFC2822 lineRemainder) of
+    Just date -> pure date
+    Nothing -> fail "Invalid date"
 
--- Parse subject field
 subjectP :: Parser String
 subjectP = do
   _ <- string "Subject: "
   lineRemainderP
 
--- Parse In-Reply-To field
 inReplyToP :: Parser String
 inReplyToP = do
   _ <- string "In-Reply-To: "
@@ -96,7 +104,6 @@ messageIDP = do
   _ <- string "Message-ID: "
   lineRemainderP
 
--- Parse content body
 contentP :: Parser String
 contentP = do
   lines <- many1Till anyLineP
@@ -108,8 +115,7 @@ anyLineP = do
   chars <- manyTill anyChar (string "\n")
   pure (stringFromChars chars)
 
--- Parse full header
-headerP :: Parser { | Header }
+headerP :: Parser Header
 headerP = do
   preambleP
   author <- authorP
@@ -118,20 +124,18 @@ headerP = do
   inReplyTo <- optionMaybe inReplyToP
   references <- optionMaybe referencesP
   messageID <- messageIDP
+  Debug.traceM { author, date, subject }
   pure { author, subject, messageID, inReplyTo, references, date }
 
--- Parse full message
 messageP :: Parser Message
 messageP = do
   { author, subject, messageID, inReplyTo, references, date } <- headerP
   content <- contentP
   pure { content, author, subject, messageID, inReplyTo, references, date }
 
--- Helper: parse until newline (but not including newline)
 anyCharButNewline :: Parser Char
 anyCharButNewline = satisfy (_ /= '\n')
 
--- Parse at least one horizontal space character (space or tab)
 hspace1 :: Parser Unit
 hspace1 = void (many1 (satisfy \c -> c == ' ' || c == '\t'))
 
