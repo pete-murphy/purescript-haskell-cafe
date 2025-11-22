@@ -7,44 +7,23 @@ import Prelude hiding (between)
 import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.Either (Either(..))
+import Data.Either (Either)
 import Data.Foldable (class Foldable)
-import Data.Identity (Identity(..))
 import Data.JSDate (JSDate)
 import Data.JSDate as JSDate
 import Data.List (List, (:))
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
-import Data.Tuple (Tuple(..))
 import Message (Header, Message)
-import Parsing (ParseError, ParseState(..), Parser, fail, initialPos, runParserT')
-import Parsing.Combinators
-  ( between
-  , lookAhead
-  , many
-  , many1
-  , many1Till
-  , manyTill
-  , optionMaybe
-  , try
-  )
-import Parsing.String
-  ( anyChar
-  , char
-  , eof
-  , satisfy
-  , string
-  )
+import Parsing (ParseError, Parser, fail)
+import Parsing as Parsing
+import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, try)
+import Parsing.String (anyChar, char, eof, satisfy, string)
 
-run
-  :: String
-  -> Either ParseError { result :: List Message, suffix :: String }
-run input = case runParserT' initialState (many messageP) of
-  Identity (Tuple (Left err) _) -> Left err
-  Identity (Tuple (Right result) (ParseState suffix _ _)) -> Right { result, suffix }
-  where
-  initialState = ParseState input initialPos false
+run :: String -> Either ParseError (List Message)
+run input =
+  Parsing.runParser input (many messageP)
 
 foreign import parseRFC2822 :: String -> JSDate
 foreign import decodeRFC2047 :: String -> String

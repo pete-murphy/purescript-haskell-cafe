@@ -1,22 +1,37 @@
 module Main
   ( main
+  , Worker
   ) where
 
 import Prelude
 
+import Data.Array as Array
+import Data.Foldable (traverse_)
+import Data.String as String
 import Effect (Effect)
-import Effect.Aff as Aff
-import Effect.Class.Console as Console
-import Message.Parser as Message.Parser
-import Promise (Promise)
-import Promise.Aff as Promise.Aff
 
-main :: Effect Unit
-main = do
-  Console.log "Main started in PureScript"
-  Aff.launchAff_ do
-    sample <- Promise.Aff.toAffE fetchSample
-    let result = Message.Parser.run sample
-    Console.logShow result
+foreign import data Worker :: Type
 
-foreign import fetchSample :: Effect (Promise String)
+main :: Worker -> Effect Unit
+main worker = do
+  onMessages worker do
+    ( map
+        ( \message ->
+            String.joinWith "\n"
+              [ message.author
+              , message.subject
+              , message.date
+              , message.content
+              ]
+
+        )
+        >>> Array.intersperse "\n\n<<<<<<<<<< MESSAGE BOUNDARY >>>>>>>>\n\n"
+        >>> traverse_ addToDOM
+    )
+
+type MessageFromWorker =
+  { author :: String, subject :: String, date :: String, content :: String }
+
+foreign import onMessages :: Worker -> (Array MessageFromWorker -> Effect Unit) -> Effect Unit
+
+foreign import addToDOM :: String -> Effect Unit

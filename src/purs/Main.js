@@ -1,5 +1,16 @@
-export const fetchSample = () => {
-  return fetch(`/haskell-cafe/2018-October.txt`).then((response) =>
-    response.text()
-  );
-};
+export function onMessages(worker) {
+  return (callback) => {
+    return () =>
+      (worker.onmessage = (event) => {
+        callback(event.data)();
+      });
+  };
+}
+
+export function addToDOM(message) {
+  console.log("Adding to DOM", message);
+  return () => {
+    document.body.appendChild(document.createElement("pre")).textContent =
+      message;
+  };
+}
