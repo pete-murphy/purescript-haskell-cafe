@@ -13,9 +13,9 @@ import Effect.Class.Console as Console
 import Effect.Now as Now
 import Message (Message)
 import Message.Parser as Message.Parser
+import Parsing (Position(..), parseErrorMessage, parseErrorPosition)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
-import StringParser as StringParser
 
 main :: Effect Unit
 main = do
@@ -28,8 +28,10 @@ main = do
     Console.logShow ((Instant.diff end start) :: Milliseconds)
     case result of
       Left err -> do
-        Console.log (StringParser.printParserError err)
-        let context = String.slice (err.pos - 20) (err.pos + 20) sample
+        let msg = parseErrorMessage err
+        let Position { index } = parseErrorPosition err
+        Console.log (msg <> " at position " <> show index)
+        let context = String.slice (index - 20) (index + 20) sample
         Console.log ("Context: \n" <> context)
       Right { result, suffix } -> do
         Console.logShow result

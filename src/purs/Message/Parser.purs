@@ -2,65 +2,69 @@ module Message.Parser
   ( run
   ) where
 
-import Prelude
+import Prelude hiding (between)
 
 import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.Either (Either)
+import Data.Either (Either(..))
 import Data.Foldable (class Foldable)
+import Data.Identity (Identity(..))
 import Data.JSDate (JSDate)
 import Data.JSDate as JSDate
 import Data.List (List, (:))
 import Data.Maybe (Maybe(..))
 import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
-import Debug as Debug
+import Data.Tuple (Tuple(..))
 import Message (Header, Message)
-import StringParser
-  ( ParseError
-  , Parser
-  , PosString
-  , anyChar
-  , char
-  , eof
-  , fail
+import Parsing (ParseError, ParseState(..), Parser, fail, initialPos, runParserT')
+import Parsing.Combinators
+  ( between
+  , lookAhead
   , many
   , many1
   , many1Till
   , manyTill
   , optionMaybe
-  , string
   , try
-  , tryAhead
   )
-import StringParser as StringParser
-import StringParser.CodeUnits (satisfy)
+import Parsing.String
+  ( anyChar
+  , char
+  , eof
+  , satisfy
+  , string
+  )
 
 run
   :: String
-  -> Either ParseError { result :: List Message, suffix :: PosString }
-run input = StringParser.unParser (many messageP) { position: 0, substring: input }
+  -> Either ParseError { result :: List Message, suffix :: String }
+run input = case runParserT' initialState (many messageP) of
+  Identity (Tuple (Left err) _) -> Left err
+  Identity (Tuple (Right result) (ParseState suffix _ _)) -> Right { result, suffix }
+  where
+  initialState = ParseState input initialPos false
 
 foreign import parseRFC2822 :: String -> JSDate
 foreign import decodeRFC2047 :: String -> String
 
-preambleP :: Parser Unit
+preambleP :: Parser String Unit
 preambleP = do
   _ <- string "From"
   _ <- manyTill anyCharButNewline (string "\n")
   pure unit
 
-authorP :: Parser String
+authorP :: Parser String String
 authorP = do
   _ <- string "From: "
   _ <- many (satisfy (_ /= '('))
-  name <- StringParser.between (char '(') (char ')') (many (satisfy (_ /= ')')))
+  name <- between (char '(') (char ')') (many (satisfy (_ /= ')')))
   _ <- string "\n"
   pure (decodeRFC2047 (stringFromChars name))
 
 --| Parse remaining part of a line (handling continuation lines)
-lineRemainderP :: Parser String
+lineRemainderP :: Parser String String
 lineRemainderP = do
   prefix <- singleLineRemainder
   rest <- many (hspace1 *> singleLineRemainder)
@@ -71,7 +75,7 @@ lineRemainderP = do
     chars <- many1Till anyChar (string "\n")
     pure (stringFromChars chars)
 
-dateP :: Parser DateTime
+dateP :: Parser String DateTime
 dateP = do
   _ <- string "Date: "
   lineRemainder <- lineRemainderP
@@ -79,12 +83,12 @@ dateP = do
     Just date -> pure date
     Nothing -> fail "Invalid date"
 
-subjectP :: Parser String
+subjectP :: Parser String String
 subjectP = do
   _ <- string "Subject: "
   lineRemainderP
 
-inReplyToP :: Parser String
+inReplyToP :: Parser String String
 inReplyToP = do
   _ <- string "In-Reply-To: "
   lineRemainder <- lineRemainderP
@@ -95,28 +99,28 @@ inReplyToP = do
         # Array.fold
     )
 
-referencesP :: Parser String
+referencesP :: Parser String String
 referencesP = do
   _ <- string "References: "
   lineRemainderP
 
-messageIDP :: Parser String
+messageIDP :: Parser String String
 messageIDP = do
   _ <- string "Message-ID: "
   lineRemainderP
 
-contentP :: Parser String
+contentP :: Parser String String
 contentP = do
   lines <- many1Till anyLineP
-    (tryAhead (void (try headerP)) <|> eof)
+    (lookAhead (void (try headerP)) <|> eof)
   pure (String.joinWith "\n" (Array.fromFoldable lines))
 
-anyLineP :: Parser String
+anyLineP :: Parser String String
 anyLineP = do
   chars <- manyTill anyChar (string "\n")
   pure (stringFromChars chars)
 
-headerP :: Parser Header
+headerP :: Parser String Header
 headerP = do
   preambleP
   author <- authorP
@@ -125,19 +129,18 @@ headerP = do
   inReplyTo <- optionMaybe inReplyToP
   references <- optionMaybe referencesP
   messageID <- messageIDP
-  Debug.traceM { author, date, subject }
   pure { author, subject, messageID, inReplyTo, references, date }
 
-messageP :: Parser Message
+messageP :: Parser String Message
 messageP = do
   { author, subject, messageID, inReplyTo, references, date } <- headerP
   content <- contentP
   pure { content, author, subject, messageID, inReplyTo, references, date }
 
-anyCharButNewline :: Parser Char
+anyCharButNewline :: Parser String Char
 anyCharButNewline = satisfy (_ /= '\n')
 
-hspace1 :: Parser Unit
+hspace1 :: Parser String Unit
 hspace1 = void (many1 (satisfy \c -> c == ' ' || c == '\t'))
 
 stringFromChars :: forall f. Foldable f => f Char -> String
