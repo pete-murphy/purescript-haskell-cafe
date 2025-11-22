@@ -2,13 +2,14 @@ module Message where
 
 import Data.DateTime (DateTime)
 import Data.Maybe (Maybe)
+import MessageID (MessageID)
 
 type HeaderRows =
   ( author :: String
   , subject :: String
-  , messageID :: String
-  , inReplyTo :: Maybe String
-  , references :: Maybe String
+  , messageID :: MessageID
+  , inReplyTo :: Array MessageID
+  , references :: Array MessageID
   , date :: DateTime
   )
 

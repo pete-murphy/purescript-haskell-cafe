@@ -12,10 +12,15 @@ import Data.Foldable (class Foldable)
 import Data.JSDate (JSDate)
 import Data.JSDate as JSDate
 import Data.List (List, (:))
+import Data.List.Types (NonEmptyList(..))
 import Data.Maybe (Maybe(..))
+import Data.Maybe as Maybe
+import Data.NonEmpty ((:|))
 import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
 import Message (Header, Message)
+import MessageID (MessageID)
+import MessageID as MessageID
 import Parsing (ParseError, Parser, fail)
 import Parsing as Parsing
 import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, try)
@@ -64,29 +69,32 @@ dateP = do
 
 subjectP :: Parser String String
 subjectP = do
-  _ <- string "Subject: "
+  _ <- string "Subject: [Haskell-cafe] "
   lineRemainderP
 
-inReplyToP :: Parser String String
+inReplyToP :: Parser String (NonEmptyList MessageID)
 inReplyToP = do
   _ <- string "In-Reply-To: "
-  lineRemainder <- lineRemainderP
-  pure
-    ( lineRemainder
-        # String.split (String.Pattern " ")
-        # Array.take 1
-        # Array.fold
-    )
+  messageIDsP
 
-referencesP :: Parser String String
+messageIDsP :: Parser String (NonEmptyList MessageID)
+messageIDsP = do
+  prefix <- singleLineRemainder
+  rest <- many (hspace1 *> singleLineRemainder)
+  pure (NonEmptyList (prefix :| rest))
+  where
+  singleLineRemainder = do
+    MessageID.parser <* string "\n"
+
+referencesP :: Parser String (NonEmptyList MessageID)
 referencesP = do
   _ <- string "References: "
-  lineRemainderP
+  messageIDsP
 
-messageIDP :: Parser String String
+messageIDP :: Parser String MessageID
 messageIDP = do
   _ <- string "Message-ID: "
-  lineRemainderP
+  MessageID.parser <* string "\n"
 
 contentP :: Parser String String
 contentP = do
@@ -106,7 +114,9 @@ headerP = do
   date <- dateP
   subject <- subjectP
   inReplyTo <- optionMaybe inReplyToP
+    <#> Maybe.maybe [] Array.fromFoldable
   references <- optionMaybe referencesP
+    <#> Maybe.maybe [] Array.fromFoldable
   messageID <- messageIDP
   pure { author, subject, messageID, inReplyTo, references, date }
 
