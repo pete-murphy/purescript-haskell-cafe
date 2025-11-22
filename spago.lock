@@ -9,9 +9,13 @@
             "avar",
             "console",
             "datetime",
+            "debug",
             "effect",
+            "formatters",
             "js-date",
             "js-intl",
+            "js-promise",
+            "js-promise-aff",
             "now",
             "prelude",
             "string-parsers"
@@ -27,14 +31,17 @@
             "control",
             "convertable-options",
             "datetime",
+            "debug",
             "distributive",
             "effect",
             "either",
             "enums",
             "exceptions",
             "exists",
+            "fixed-points",
             "foldable-traversable",
             "foreign",
+            "formatters",
             "functions",
             "functors",
             "gen",
@@ -43,6 +50,8 @@
             "invariant",
             "js-date",
             "js-intl",
+            "js-promise",
+            "js-promise-aff",
             "lazy",
             "lists",
             "maybe",
@@ -54,6 +63,7 @@
             "ordered-collections",
             "orders",
             "parallel",
+            "parsing",
             "partial",
             "prelude",
             "profunctor",
@@ -68,6 +78,7 @@
             "tuples",
             "type-equality",
             "unfoldable",
+            "unicode",
             "unsafe-coerce"
           ]
         },
@@ -682,6 +693,15 @@
         "tuples"
       ]
     },
+    "debug": {
+      "type": "registry",
+      "version": "6.0.2",
+      "integrity": "sha256-vmkYFuXYuELBzeauvgHG6E6Kf/Hp1dAnxwE9ByHfwSg=",
+      "dependencies": [
+        "functions",
+        "prelude"
+      ]
+    },
     "distributive": {
       "type": "registry",
       "version": "6.0.0",
@@ -749,6 +769,17 @@
         "unsafe-coerce"
       ]
     },
+    "fixed-points": {
+      "type": "registry",
+      "version": "7.0.0",
+      "integrity": "sha256-hTl5fzeG4mzAOFzEzAeNH7kJvJgYCH7x3v2NdX9pOE4=",
+      "dependencies": [
+        "exists",
+        "newtype",
+        "prelude",
+        "transformers"
+      ]
+    },
     "foldable-traversable": {
       "type": "registry",
       "version": "6.0.0",
@@ -780,6 +811,20 @@
         "maybe",
         "prelude",
         "strings",
+        "transformers"
+      ]
+    },
+    "formatters": {
+      "type": "registry",
+      "version": "7.0.0",
+      "integrity": "sha256-5JaC9d2p0xoqJWjWxlHH19R4iJwFTBr4j7SlYcLgicE=",
+      "dependencies": [
+        "datetime",
+        "fixed-points",
+        "lists",
+        "numbers",
+        "parsing",
+        "prelude",
         "transformers"
       ]
     },
@@ -890,6 +935,29 @@
         "tuples",
         "unfoldable",
         "unsafe-coerce"
+      ]
+    },
+    "js-promise": {
+      "type": "registry",
+      "version": "1.0.0",
+      "integrity": "sha256-kXNo5g9RJgPdrTuKRe5oG2kBIwPp+j5VDPDplqZBJzQ=",
+      "dependencies": [
+        "effect",
+        "exceptions",
+        "foldable-traversable",
+        "functions",
+        "maybe",
+        "prelude"
+      ]
+    },
+    "js-promise-aff": {
+      "type": "registry",
+      "version": "1.0.0",
+      "integrity": "sha256-s9kml9Ei74hKlMMg41yyZp4GkbmYUwaH+gBWWrdhwec=",
+      "dependencies": [
+        "aff",
+        "foreign",
+        "js-promise"
       ]
     },
     "lazy": {
@@ -1026,6 +1094,38 @@
         "profunctor",
         "refs",
         "transformers"
+      ]
+    },
+    "parsing": {
+      "type": "registry",
+      "version": "10.2.0",
+      "integrity": "sha256-ZDIdMFAKkst57x6BVa1aUWJnS8smoZnXsZ339Aq1mPA=",
+      "dependencies": [
+        "arrays",
+        "control",
+        "effect",
+        "either",
+        "enums",
+        "foldable-traversable",
+        "functions",
+        "identity",
+        "integers",
+        "lazy",
+        "lists",
+        "maybe",
+        "newtype",
+        "nullable",
+        "numbers",
+        "partial",
+        "prelude",
+        "st",
+        "strings",
+        "tailrec",
+        "transformers",
+        "tuples",
+        "unfoldable",
+        "unicode",
+        "unsafe-coerce"
       ]
     },
     "partial": {
@@ -1195,6 +1295,16 @@
         "partial",
         "prelude",
         "tuples"
+      ]
+    },
+    "unicode": {
+      "type": "registry",
+      "version": "6.0.0",
+      "integrity": "sha256-QJnTVZpmihEAUiMeYrfkusVoziJWp2hJsgi9bMQLue8=",
+      "dependencies": [
+        "foldable-traversable",
+        "maybe",
+        "strings"
       ]
     },
     "unsafe-coerce": {

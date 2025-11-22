@@ -5,9 +5,13 @@ package:
     - avar
     - console
     - datetime
+    - debug
     - effect
+    - formatters
     - js-date
     - js-intl
+    - js-promise
+    - js-promise-aff
     - now
     - prelude
     - string-parsers

@@ -1,4 +1,6 @@
-module Worker where
+module Main
+  ( main
+  ) where
 
 import Prelude
 
@@ -12,15 +14,10 @@ import Promise.Aff as Promise.Aff
 
 main :: Effect Unit
 main = do
-  Console.log "Worker started in PureScript"
-  sendMessage "Hello from PureScript"
+  Console.log "Main started in PureScript"
   Aff.launchAff_ do
     sample <- Promise.Aff.toAffE fetchSample
     let result = Message.Parser.run sample
     Console.logShow result
-
-foreign import sendMessage :: String -> Effect Unit
-
-foreign import debugMessage :: Message -> Effect Unit
 
 foreign import fetchSample :: Effect (Promise String)
