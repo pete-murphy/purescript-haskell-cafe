@@ -43,6 +43,7 @@ run
 run input = StringParser.unParser (many messageP) { position: 0, substring: input }
 
 foreign import parseRFC2822 :: String -> JSDate
+foreign import decodeRFC2047 :: String -> String
 
 preambleP :: Parser Unit
 preambleP = do
@@ -56,7 +57,7 @@ authorP = do
   _ <- many (satisfy (_ /= '('))
   name <- StringParser.between (char '(') (char ')') (many (satisfy (_ /= ')')))
   _ <- string "\n"
-  pure (stringFromChars name)
+  pure (decodeRFC2047 (stringFromChars name))
 
 --| Parse remaining part of a line (handling continuation lines)
 lineRemainderP :: Parser String
