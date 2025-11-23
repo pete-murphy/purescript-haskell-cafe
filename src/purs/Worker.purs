@@ -5,17 +5,19 @@ import Prelude
 import Data.Array as Array
 import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
-import Data.String.CodeUnits as String
+import Data.JSDate as JSDate
+import Data.String as String
+import Data.String.CodeUnits as String.CodeUnits
+import Data.Traversable as Traversable
 import Effect (Effect)
 import Effect.Aff (Milliseconds)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Class.Console as Console
 import Effect.Now as Now
-import JS.Intl.DateTimeFormat as Intl.DateTimeFormat
-import JS.Intl.Locale as Intl.Locale
 import Message (Message)
 import Message.Parser as Message.Parser
+import MessageID as MessageID
 import Parsing (Position(..), parseErrorMessage, parseErrorPosition)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
@@ -23,11 +25,13 @@ import Promise.Aff as Promise.Aff
 main :: Effect Unit
 main = do
   Console.log "Worker started in PureScript"
-  en_US <- Intl.Locale.new_ "en-US"
-  dateFormatter <- Intl.DateTimeFormat.new [ en_US ] { dateStyle: "long", timeStyle: "short" }
+  let filename = "2025-August.txt"
+
   Aff.launchAff_ do
+    pglite <- Promise.Aff.toAffE newPGlite
+    Promise.Aff.toAffE (createSchema pglite)
     start <- liftEffect Now.now
-    sample <- Promise.Aff.toAffE fetchSample
+    sample <- Promise.Aff.toAffE (fetchSample filename)
     let result = Message.Parser.run sample
     end <- liftEffect Now.now
     Console.logShow (Instant.diff end start :: Milliseconds)
@@ -37,14 +41,353 @@ main = do
         let msg = parseErrorMessage err
         let Position { index } = parseErrorPosition err
         Console.log (msg <> " at position " <> show index)
-        let context = String.slice (index - 20) (index + 20) sample
+        let context = String.CodeUnits.slice (index - 20) (index + 20) sample
         Console.log ("Context: \n" <> context)
-      Right messages -> do
-        let messages' = messages <#> \message -> { author: message.author, subject: message.subject, date: Intl.DateTimeFormat.format dateFormatter message.date, content: message.content }
-        liftEffect (debugMessage (Array.fromFoldable messages'))
+      Right messages' -> do
+        messages <- liftEffect do
+          Traversable.for messages' \message -> do
+            messageForPGlite filename message
+        Promise.Aff.toAffE (insertMessages pglite (Array.fromFoldable messages))
+        pure unit
 
-foreign import sendMessage :: String -> Effect Unit
+foreign import fetchSample :: String -> Effect (Promise String)
 
-foreign import debugMessage :: forall message. Array message -> Effect Unit
+foreign import data PGlite :: Type
 
-foreign import fetchSample :: Effect (Promise String)
+foreign import newPGlite :: Effect (Promise PGlite)
+foreign import createSchema :: PGlite -> Effect (Promise Unit)
+foreign import insertMessages :: PGlite -> Array MessageForPGlite -> Effect (Promise Unit)
+
+type MessageForPGlite =
+  Array String
+
+messageForPGlite :: String -> Message -> Effect MessageForPGlite
+messageForPGlite monthFile message = do
+  dateString <- JSDate.fromDateTime message.date # JSDate.toISOString
+  pure
+    ( [ MessageID.toString message.messageID
+      , message.subject
+      , message.author
+      , dateString
+      , map MessageID.toString message.inReplyTo
+          # String.joinWith ","
+      , map MessageID.toString message.references
+          # String.joinWith ","
+      , message.content
+      , monthFile
+      ]
+    )
+
+-- "id",
+-- "subject",
+-- "from_addr",
+-- "date",
+-- "in_reply_to",
+-- "refs",
+-- "content",
+-- "month_file",
+-- "path",
+-- "search",
+
+filenames :: Array String
+filenames =
+  [ "2025-August.txt"
+  , "2025-July.txt"
+  , "2025-June.txt"
+  , "2025-May.txt"
+  , "2025-April.txt"
+  , "2025-March.txt"
+  , "2025-February.txt"
+  , "2025-January.txt"
+  , "2024-December.txt"
+  , "2024-November.txt"
+  , "2024-October.txt"
+  , "2024-September.txt"
+  , "2024-August.txt"
+  , "2024-July.txt"
+  , "2024-June.txt"
+  , "2024-May.txt"
+  , "2024-April.txt"
+  , "2024-March.txt"
+  , "2024-February.txt"
+  , "2024-January.txt"
+  , "2023-December.txt"
+  , "2023-November.txt"
+  , "2023-October.txt"
+  , "2023-September.txt"
+  , "2023-August.txt"
+  , "2023-July.txt"
+  , "2023-June.txt"
+  , "2023-May.txt"
+  , "2023-April.txt"
+  , "2023-March.txt"
+  , "2023-February.txt"
+  , "2023-January.txt"
+  , "2022-December.txt"
+  , "2022-November.txt"
+  , "2022-October.txt"
+  , "2022-September.txt"
+  , "2022-August.txt"
+  , "2022-July.txt"
+  , "2022-June.txt"
+  , "2022-May.txt"
+  , "2022-April.txt"
+  , "2022-March.txt"
+  , "2022-February.txt"
+  , "2022-January.txt"
+  , "2021-December.txt"
+  , "2021-November.txt"
+  , "2021-October.txt"
+  , "2021-September.txt"
+  , "2021-August.txt"
+  , "2021-July.txt"
+  , "2021-June.txt"
+  , "2021-May.txt"
+  , "2021-April.txt"
+  , "2021-March.txt"
+  , "2021-February.txt"
+  , "2021-January.txt"
+  , "2020-December.txt"
+  , "2020-November.txt"
+  , "2020-October.txt"
+  , "2020-September.txt"
+  , "2020-August.txt"
+  , "2020-July.txt"
+  , "2020-June.txt"
+  , "2020-May.txt"
+  , "2020-April.txt"
+  , "2020-March.txt"
+  , "2020-February.txt"
+  , "2020-January.txt"
+  , "2019-December.txt"
+  , "2019-November.txt"
+  , "2019-October.txt"
+  , "2019-September.txt"
+  , "2019-August.txt"
+  , "2019-July.txt"
+  , "2019-June.txt"
+  , "2019-May.txt"
+  , "2019-April.txt"
+  , "2019-March.txt"
+  , "2019-February.txt"
+  , "2019-January.txt"
+  , "2018-December.txt"
+  , "2018-November.txt"
+  , "2018-October.txt"
+  , "2018-September.txt"
+  , "2018-August.txt"
+  , "2018-July.txt"
+  , "2018-June.txt"
+  , "2018-May.txt"
+  , "2018-April.txt"
+  , "2018-March.txt"
+  , "2018-February.txt"
+  , "2018-January.txt"
+  , "2017-December.txt"
+  , "2017-November.txt"
+  , "2017-October.txt"
+  , "2017-September.txt"
+  , "2017-August.txt"
+  , "2017-July.txt"
+  , "2017-June.txt"
+  , "2017-May.txt"
+  , "2017-April.txt"
+  , "2017-March.txt"
+  , "2017-February.txt"
+  , "2017-January.txt"
+  , "2016-December.txt"
+  , "2016-November.txt"
+  , "2016-October.txt"
+  , "2016-September.txt"
+  , "2016-August.txt"
+  , "2016-July.txt"
+  , "2016-June.txt"
+  , "2016-May.txt"
+  , "2016-April.txt"
+  , "2016-March.txt"
+  , "2016-February.txt"
+  , "2016-January.txt"
+  , "2015-December.txt"
+  , "2015-November.txt"
+  , "2015-October.txt"
+  , "2015-September.txt"
+  , "2015-August.txt"
+  , "2015-July.txt"
+  , "2015-June.txt"
+  , "2015-May.txt"
+  , "2015-April.txt"
+  , "2015-March.txt"
+  , "2015-February.txt"
+  , "2015-January.txt"
+  , "2014-December.txt"
+  , "2014-November.txt"
+  , "2014-October.txt"
+  , "2014-September.txt"
+  , "2014-August.txt"
+  , "2014-July.txt"
+  , "2014-June.txt"
+  , "2014-May.txt"
+  , "2014-April.txt"
+  , "2014-March.txt"
+  , "2014-February.txt"
+  , "2014-January.txt"
+  , "2013-December.txt"
+  , "2013-November.txt"
+  , "2013-October.txt.gz"
+  , "2013-September.txt.gz"
+  , "2013-August.txt.gz"
+  , "2013-July.txt.gz"
+  , "2013-June.txt.gz"
+  , "2013-May.txt.gz"
+  , "2013-April.txt.gz"
+  , "2013-March.txt.gz"
+  , "2013-February.txt.gz"
+  , "2013-January.txt.gz"
+  , "2012-December.txt.gz"
+  , "2012-November.txt.gz"
+  , "2012-October.txt.gz"
+  , "2012-September.txt.gz"
+  , "2012-August.txt.gz"
+  , "2012-July.txt.gz"
+  , "2012-June.txt.gz"
+  , "2012-May.txt.gz"
+  , "2012-April.txt.gz"
+  , "2012-March.txt.gz"
+  , "2012-February.txt.gz"
+  , "2012-January.txt.gz"
+  , "2011-December.txt.gz"
+  , "2011-November.txt.gz"
+  , "2011-October.txt.gz"
+  , "2011-September.txt.gz"
+  , "2011-August.txt.gz"
+  , "2011-July.txt.gz"
+  , "2011-June.txt.gz"
+  , "2011-May.txt.gz"
+  , "2011-April.txt.gz"
+  , "2011-March.txt.gz"
+  , "2011-February.txt.gz"
+  , "2011-January.txt.gz"
+  , "2010-December.txt.gz"
+  , "2010-November.txt.gz"
+  , "2010-October.txt.gz"
+  , "2010-September.txt.gz"
+  , "2010-August.txt.gz"
+  , "2010-July.txt.gz"
+  , "2010-June.txt.gz"
+  , "2010-May.txt.gz"
+  , "2010-April.txt.gz"
+  , "2010-March.txt.gz"
+  , "2010-February.txt.gz"
+  , "2010-January.txt.gz"
+  , "2009-December.txt.gz"
+  , "2009-November.txt.gz"
+  , "2009-October.txt.gz"
+  , "2009-September.txt.gz"
+  , "2009-August.txt.gz"
+  , "2009-July.txt.gz"
+  , "2009-June.txt.gz"
+  , "2009-May.txt.gz"
+  , "2009-April.txt.gz"
+  , "2009-March.txt.gz"
+  , "2009-February.txt.gz"
+  , "2009-January.txt.gz"
+  , "2008-December.txt.gz"
+  , "2008-November.txt.gz"
+  , "2008-October.txt.gz"
+  , "2008-September.txt.gz"
+  , "2008-August.txt.gz"
+  , "2008-July.txt.gz"
+  , "2008-June.txt.gz"
+  , "2008-May.txt.gz"
+  , "2008-April.txt.gz"
+  , "2008-March.txt.gz"
+  , "2008-February.txt.gz"
+  , "2008-January.txt.gz"
+  , "2007-December.txt.gz"
+  , "2007-November.txt.gz"
+  , "2007-October.txt.gz"
+  , "2007-September.txt.gz"
+  , "2007-August.txt.gz"
+  , "2007-July.txt.gz"
+  , "2007-June.txt.gz"
+  , "2007-May.txt.gz"
+  , "2007-April.txt.gz"
+  , "2007-March.txt.gz"
+  , "2007-February.txt.gz"
+  , "2007-January.txt.gz"
+  , "2006-December.txt.gz"
+  , "2006-November.txt.gz"
+  , "2006-October.txt.gz"
+  , "2006-September.txt.gz"
+  , "2006-August.txt.gz"
+  , "2006-July.txt.gz"
+  , "2006-June.txt.gz"
+  , "2006-May.txt.gz"
+  , "2006-April.txt.gz"
+  , "2006-March.txt.gz"
+  , "2006-February.txt.gz"
+  , "2006-January.txt.gz"
+  , "2005-December.txt.gz"
+  , "2005-November.txt.gz"
+  , "2005-October.txt.gz"
+  , "2005-September.txt.gz"
+  , "2005-August.txt.gz"
+  , "2005-July.txt.gz"
+  , "2005-June.txt.gz"
+  , "2005-May.txt.gz"
+  , "2005-April.txt.gz"
+  , "2005-March.txt.gz"
+  , "2005-February.txt.gz"
+  , "2005-January.txt.gz"
+  , "2004-December.txt.gz"
+  , "2004-November.txt.gz"
+  , "2004-October.txt.gz"
+  , "2004-September.txt.gz"
+  , "2004-August.txt.gz"
+  , "2004-July.txt.gz"
+  , "2004-June.txt.gz"
+  , "2004-May.txt.gz"
+  , "2004-April.txt.gz"
+  , "2004-March.txt.gz"
+  , "2004-February.txt.gz"
+  , "2004-January.txt.gz"
+  , "2003-December.txt.gz"
+  , "2003-November.txt.gz"
+  , "2003-October.txt.gz"
+  , "2003-September.txt.gz"
+  , "2003-August.txt.gz"
+  , "2003-July.txt.gz"
+  , "2003-June.txt.gz"
+  , "2003-May.txt.gz"
+  , "2003-April.txt.gz"
+  , "2003-March.txt.gz"
+  , "2003-February.txt.gz"
+  , "2003-January.txt.gz"
+  , "2002-December.txt.gz"
+  , "2002-November.txt.gz"
+  , "2002-October.txt.gz"
+  , "2002-September.txt.gz"
+  , "2002-August.txt.gz"
+  , "2002-July.txt.gz"
+  , "2002-June.txt.gz"
+  , "2002-May.txt.gz"
+  , "2002-April.txt.gz"
+  , "2002-March.txt.gz"
+  , "2002-February.txt.gz"
+  , "2002-January.txt.gz"
+  , "2001-December.txt.gz"
+  , "2001-November.txt.gz"
+  , "2001-October.txt.gz"
+  , "2001-September.txt.gz"
+  , "2001-August.txt.gz"
+  , "2001-July.txt.gz"
+  , "2001-June.txt.gz"
+  , "2001-May.txt.gz"
+  , "2001-April.txt.gz"
+  , "2001-March.txt.gz"
+  , "2001-February.txt.gz"
+  , "2001-January.txt.gz"
+  , "2000-December.txt.gz"
+  , "2000-November.txt.gz"
+  , "2000-October.txt.gz"
+  ]

@@ -21,7 +21,9 @@
             "parsing",
             "prelude",
             "spec",
-            "string-parsers"
+            "string-parsers",
+            "strings",
+            "typelevel-regex"
           ],
           "build_plan": [
             "aff",
@@ -88,6 +90,8 @@
             "transformers",
             "tuples",
             "type-equality",
+            "typelevel-prelude",
+            "typelevel-regex",
             "unfoldable",
             "unicode",
             "unsafe-coerce"
@@ -1417,6 +1421,24 @@
       "version": "4.0.1",
       "integrity": "sha256-Hs9D6Y71zFi/b+qu5NSbuadUQXe5iv5iWx0226vOHUw=",
       "dependencies": []
+    },
+    "typelevel-prelude": {
+      "type": "registry",
+      "version": "7.0.0",
+      "integrity": "sha256-uFF2ph+vHcQpfPuPf2a3ukJDFmLhApmkpTMviHIWgJM=",
+      "dependencies": [
+        "prelude",
+        "type-equality"
+      ]
+    },
+    "typelevel-regex": {
+      "type": "registry",
+      "version": "0.0.3",
+      "integrity": "sha256-MbA93N0IOEhAvEoQLJC8HUt4WtAvzJzocyuMzA8hPOY=",
+      "dependencies": [
+        "prelude",
+        "typelevel-prelude"
+      ]
     },
     "unfoldable": {
       "type": "registry",

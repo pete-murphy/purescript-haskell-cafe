@@ -18,6 +18,8 @@ package:
     - prelude
     - spec
     - string-parsers
+    - strings
+    - typelevel-regex
   test:
     main: Test.Main
     dependencies: []
