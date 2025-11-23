@@ -25,7 +25,7 @@ import Promise.Aff as Promise.Aff
 main :: Effect Unit
 main = do
   Console.log "Worker started in PureScript"
-  let filename = "2019-October.txt"
+  let filename = "2007-November.txt.gz"
 
   Aff.launchAff_ do
     pglite <- Promise.Aff.toAffE newPGlite
@@ -45,9 +45,9 @@ main = do
         Console.log ("Context: \n" <> context)
       Right messages' -> do
         messages <- liftEffect do
-          Traversable.for messages' \message -> do
+          Traversable.for (Array.fromFoldable messages') \message -> do
             messageForPGlite filename message
-        Promise.Aff.toAffE (insertMessages pglite (Array.fromFoldable messages))
+        Promise.Aff.toAffE (insertMessages pglite messages)
         pure unit
 
 foreign import fetchSample :: String -> Effect (Promise String)

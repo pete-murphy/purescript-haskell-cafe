@@ -71,7 +71,7 @@ export function insertMessages(pglite) {
       }
     );
 
-    const query = `INSERT INTO messages (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")};`;
+    const query = `INSERT INTO messages (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} ON CONFLICT DO NOTHING;`;
 
     return () => {
       return pglite.query(query, flattened);
