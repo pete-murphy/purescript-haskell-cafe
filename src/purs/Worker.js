@@ -1,6 +1,5 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 
-// pgInstance = new PGliteWorker(dbWorker) as unknown as PGliteLike
 export async function newPGlite() {
   const dbWorker = new Worker(
     new URL("../../src/pglite-worker.js", import.meta.url),

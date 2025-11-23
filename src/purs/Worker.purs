@@ -25,7 +25,7 @@ import Promise.Aff as Promise.Aff
 main :: Effect Unit
 main = do
   Console.log "Worker started in PureScript"
-  let filename = "2025-August.txt"
+  let filename = "2018-August.txt"
 
   Aff.launchAff_ do
     pglite <- Promise.Aff.toAffE newPGlite
