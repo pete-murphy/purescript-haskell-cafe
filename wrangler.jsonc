@@ -10,6 +10,9 @@
   "observability": {
     "enabled": true,
   },
+  "assets": {
+    "directory": "./dist",
+  },
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

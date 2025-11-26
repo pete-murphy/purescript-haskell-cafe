@@ -11,3 +11,7 @@
 
 @build:
     npx spago build
+    npm run build
+
+@deploy:
+    npx wrangler deploy
