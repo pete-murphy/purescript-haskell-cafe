@@ -23,15 +23,18 @@ import Data.String.CodeUnits as String.CodeUnits
 import Message (Header, Message)
 import MessageID (MessageID)
 import MessageID as MessageID
-import Parsing (ParseError, Parser, fail)
+import Parsing (ParseError, Parser, Position(..), fail)
 import Parsing as Parsing
 import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill, optionMaybe, optional, try)
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
-run :: String -> Either ParseError (List Message)
+run :: String -> Either ParseError { remainder :: String, messages :: List Message }
 run input =
-  Parsing.runParser input (many messageP)
+  Parsing.runParser input do
+    messages <- many messageP
+    Position { index } <- Parsing.position
+    pure { remainder: String.drop index input, messages }
 
 foreign import parseRFC2822 :: String -> JSDate
 foreign import decodeRFC2047 :: String -> String

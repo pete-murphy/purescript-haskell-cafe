@@ -43,11 +43,11 @@ main = do
         Console.log (msg <> " at position " <> show index)
         let context = String.CodeUnits.slice (index - 20) (index + 20) sample
         Console.log ("Context: \n" <> context)
-      Right messages' -> do
-        messages <- liftEffect do
-          Traversable.for (Array.fromFoldable messages') \message -> do
+      Right { messages } -> do
+        messagesForPGlite <- liftEffect do
+          Traversable.for (Array.fromFoldable messages) \message -> do
             messageForPGlite filename message
-        Promise.Aff.toAffE (insertMessages pglite messages)
+        Promise.Aff.toAffE (insertMessages pglite messagesForPGlite)
         pure unit
 
 foreign import fetchSample :: String -> Effect (Promise String)
