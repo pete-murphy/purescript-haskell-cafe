@@ -5,6 +5,7 @@ module Message.Parser
 import Prelude hiding (between)
 
 import Control.Alt ((<|>))
+import Control.Alternative (guard)
 import Data.Array as Array
 import Data.DateTime (DateTime)
 import Data.Either (Either)
@@ -29,10 +30,10 @@ import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
-run :: String -> Either ParseError { remainder :: String, messages :: List Message }
-run input =
+run :: { input :: String, streamIsDone :: Boolean } -> Either ParseError { remainder :: String, messages :: List Message }
+run { input, streamIsDone } =
   Parsing.runParser input do
-    messages <- many messageP
+    messages <- many (try (messageP { expectEOF: streamIsDone }))
     Position { index } <- Parsing.position
     pure { remainder: String.drop index input, messages }
 
@@ -113,10 +114,10 @@ messageIDP = do
   _ <- string "Message-ID: "
   MessageID.parser <* string "\n"
 
-contentP :: Parser String String
-contentP = do
+contentP :: { expectEOF :: Boolean } -> Parser String String
+contentP { expectEOF } = do
   lines <- many1Till anyLineP
-    (lookAhead (void (try headerP)) <|> eof)
+    (lookAhead (void (try headerP)) <|> guard expectEOF *> eof)
   pure (String.joinWith "\n" (Array.fromFoldable lines))
 
 anyLineP :: Parser String String
@@ -137,10 +138,10 @@ headerP = do
   messageID <- messageIDP
   pure { author, subject, messageID, inReplyTo, references, date }
 
-messageP :: Parser String Message
-messageP = do
+messageP :: { expectEOF :: Boolean } -> Parser String Message
+messageP { expectEOF } = do
   { author, subject, messageID, inReplyTo, references, date } <- headerP
-  content <- contentP
+  content <- contentP { expectEOF }
   pure { content, author, subject, messageID, inReplyTo, references, date }
 
 anyCharButNewline :: Parser String Char

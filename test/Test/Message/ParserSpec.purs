@@ -248,289 +248,509 @@ spec :: Spec Unit
 spec = do
   describe "Message.Parser" do
     describe "example 1" do
-      it "parses successfully" do
-        case Message.Parser.run example1 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example1 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example1 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example1 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example1 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example1 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example1 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example1 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example1 err)
 
-      it "extracts author correctly" do
-        case Message.Parser.run example1 of
-          Right { messages: (message : _) } -> message.author `shouldEqual` "Todd Wilson"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example1 err)
+        it "extracts author correctly" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.author `shouldEqual` "Todd Wilson"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example1 err)
 
-      it "extracts subject correctly" do
-        case Message.Parser.run example1 of
-          Right { messages: (message : _) } -> message.subject `shouldEqual` "Performance best practices"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example1 err)
+        it "extracts subject correctly" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.subject `shouldEqual` "Performance best practices"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example1 err)
 
-      it "extracts messageID correctly" do
-        case Message.Parser.run example1 of
-          Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<CA+-99oLpRrX7jgDru6=xf=U3qo9SGtPK33j2rPX8eON4mrLagg@mail.gmail.com>"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example1 err)
+        it "extracts messageID correctly" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<CA+-99oLpRrX7jgDru6=xf=U3qo9SGtPK33j2rPX8eON4mrLagg@mail.gmail.com>"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example1 err)
 
-      it "extracts content correctly" do
-        case Message.Parser.run example1 of
-          Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example1 err)
+        it "extracts content correctly" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example1 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example1, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example1 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example1, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example1 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example1, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example1
+            Left err -> fail (formatParseError example1 err)
 
     describe "example 2" do
-      it "parses successfully" do
-        case Message.Parser.run example2 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example2 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example2 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example2 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example2 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example2 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example2 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example2 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts author correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> message.author `shouldEqual` "Dario Bertini"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts author correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.author `shouldEqual` "Dario Bertini"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts subject correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> message.subject `shouldEqual` "Tor project"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts subject correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.subject `shouldEqual` "Tor project"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts messageID correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<CAFdyfB2_bcuLeE3EkidDkdRzYMr=Xfw_fBsLFgS1ygwQpM3a=g@mail.gmail.com>"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts messageID correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<CAFdyfB2_bcuLeE3EkidDkdRzYMr=Xfw_fBsLFgS1ygwQpM3a=g@mail.gmail.com>"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts inReplyTo correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> do
-            Array.length message.inReplyTo `shouldEqual` 1
-            Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53DAB0E9.70207@power.com.pl>")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts inReplyTo correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> do
+              Array.length message.inReplyTo `shouldEqual` 1
+              Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53DAB0E9.70207@power.com.pl>")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts references correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 6
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts references correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 6
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
 
-      it "extracts content correctly" do
-        case Message.Parser.run example2 of
-          Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example2 err)
+        it "extracts content correctly" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example2 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example2, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example2 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example2, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example2 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example2, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example2
+            Left err -> fail (formatParseError example2 err)
 
     describe "example 3" do
-      it "parses successfully" do
-        case Message.Parser.run example3 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example3 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example3 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example3 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example3 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example3 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example3 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example3 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts author correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> message.author `shouldEqual` "Andreas Reuleaux"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts author correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.author `shouldEqual` "Andreas Reuleaux"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts subject correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> message.subject `shouldEqual` "parsec: problem combining lookAhead with many1 (bug?)"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts subject correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.subject `shouldEqual` "parsec: problem combining lookAhead with many1 (bug?)"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts messageID correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<87y4v0z2es.fsf@web.de>"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts messageID correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<87y4v0z2es.fsf@web.de>"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts inReplyTo correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> do
-            Array.length message.inReplyTo `shouldEqual` 1
-            Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMmzbfWA9S3YGjJ1iQaa72rKZyuV4psvEP3LsQuDGC3QED-YVw@mail.gmail.com>")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts inReplyTo correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> do
+              Array.length message.inReplyTo `shouldEqual` 1
+              Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMmzbfWA9S3YGjJ1iQaa72rKZyuV4psvEP3LsQuDGC3QED-YVw@mail.gmail.com>")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts references correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 1
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts references correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 1
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
 
-      it "extracts content correctly" do
-        case Message.Parser.run example3 of
-          Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example3 err)
+        it "extracts content correctly" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example3 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example3, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example3 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example3, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example3 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example3, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example3
+            Left err -> fail (formatParseError example3 err)
 
     describe "example 4" do
-      it "parses successfully" do
-        case Message.Parser.run example4 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example4 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example4 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example4 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example4 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example4 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example4 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example4 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts author correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> message.author `shouldEqual` "Chris Warburton"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts author correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.author `shouldEqual` "Chris Warburton"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts subject correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> message.subject `shouldEqual` "The Good, the Bad and the GUI"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts subject correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.subject `shouldEqual` "The Good, the Bad and the GUI"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts messageID correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<864mxi6on0.fsf@gmail.com>"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts messageID correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<864mxi6on0.fsf@gmail.com>"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts inReplyTo correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> do
-            Array.length message.inReplyTo `shouldEqual` 1
-            Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53E9C868.9090406@power.com.pl>")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts inReplyTo correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> do
+              Array.length message.inReplyTo `shouldEqual` 1
+              Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<53E9C868.9090406@power.com.pl>")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts references correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 3
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts references correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 3
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
 
-      it "extracts content correctly" do
-        case Message.Parser.run example4 of
-          Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example4 err)
+        it "extracts content correctly" do
+          case Message.Parser.run { input: example4, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example4 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example4, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example4 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example4, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example4 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example4, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example4
+            Left err -> fail (formatParseError example4 err)
 
     describe "example 5" do
-      it "parses successfully" do
-        case Message.Parser.run example5 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example5 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example5 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example5 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example5 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example5 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example5 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example5 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts author correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> message.author `shouldEqual` "Chris Warburton"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts author correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.author `shouldEqual` "Chris Warburton"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts subject correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> message.subject `shouldEqual` "Does the lambda calculus have provisions for I/O? State can be done with free variables."
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts subject correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.subject `shouldEqual` "Does the lambda calculus have provisions for I/O? State can be done with free variables."
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts messageID correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<86k36b5s4g.fsf@gmail.com>"
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts messageID correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.messageID `shouldEqual` parseMessageID "<86k36b5s4g.fsf@gmail.com>"
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts inReplyTo correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> do
-            Array.length message.inReplyTo `shouldEqual` 1
-            Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMLKXynJhDV-WA-5Yb1=vVHoy5mwL+TZODXMKN182Ch5+3VuQg@mail.gmail.com>")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts inReplyTo correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> do
+              Array.length message.inReplyTo `shouldEqual` 1
+              Array.head message.inReplyTo `shouldEqual` Just (parseMessageID "<CAMLKXynJhDV-WA-5Yb1=vVHoy5mwL+TZODXMKN182Ch5+3VuQg@mail.gmail.com>")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts references correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 1
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts references correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> Array.length message.references `shouldEqual` 1
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
 
-      it "extracts content correctly" do
-        case Message.Parser.run example5 of
-          Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
-          Right _ -> fail "Expected at least one message"
-          Left err -> fail (formatParseError example5 err)
+        it "extracts content correctly" do
+          case Message.Parser.run { input: example5, streamIsDone: true } of
+            Right { messages: (message : _) } -> message.content `shouldSatisfy` (_ /= "")
+            Right _ -> fail "Expected at least one message"
+            Left err -> fail (formatParseError example5 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example5, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example5 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example5, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example5 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example5, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example5
+            Left err -> fail (formatParseError example5 err)
 
     describe "example 6" do
-      it "parses successfully" do
-        case Message.Parser.run example6 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example6 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example6, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example6 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example6 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example6 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example6, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example6 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example6 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example6 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example6, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example6 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example6, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example6 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example6, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example6 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example6, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example6
+            Left err -> fail (formatParseError example6 err)
 
     describe "example 7" do
-      it "parses successfully" do
-        case Message.Parser.run example7 of
-          Right _ -> pure unit
-          Left err -> fail (formatParseError example7 err)
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example7, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example7 err)
 
-      it "has empty remainder" do
-        case Message.Parser.run example7 of
-          Right { remainder } -> remainder `shouldEqual` ""
-          Left err -> fail (formatParseError example7 err)
+        it "has empty remainder" do
+          case Message.Parser.run { input: example7, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError example7 err)
 
-      it "parses exactly one message" do
-        case Message.Parser.run example7 of
-          Right { messages } -> List.length messages `shouldEqual` 1
-          Left err -> fail (formatParseError example7 err)
+        it "parses exactly one message" do
+          case Message.Parser.run { input: example7, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError example7 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: example7, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError example7 err)
+
+        it "has messages list empty" do
+          case Message.Parser.run { input: example7, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError example7 err)
+
+        it "has remainder equal to input" do
+          case Message.Parser.run { input: example7, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example7
+            Left err -> fail (formatParseError example7 err)
+
+    describe "concatenated examples (example1 <> example2 <> example3)" do
+      let
+        concatenated = example1 <> example2 <> example3
+
+      describe "streamIsDone: true" do
+        it "parses successfully" do
+          case Message.Parser.run { input: concatenated, streamIsDone: true } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError concatenated err)
+
+        it "has empty remainder" do
+          case Message.Parser.run { input: concatenated, streamIsDone: true } of
+            Right { remainder } -> remainder `shouldEqual` ""
+            Left err -> fail (formatParseError concatenated err)
+
+        it "parses exactly three messages" do
+          case Message.Parser.run { input: concatenated, streamIsDone: true } of
+            Right { messages } -> List.length messages `shouldEqual` 3
+            Left err -> fail (formatParseError concatenated err)
+
+        it "first message matches example1" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (expectedMessage : _) } -> do
+              case Message.Parser.run { input: concatenated, streamIsDone: true } of
+                Right { messages: (first : _) } -> do
+                  first.author `shouldEqual` expectedMessage.author
+                  first.subject `shouldEqual` expectedMessage.subject
+                  first.messageID `shouldEqual` expectedMessage.messageID
+                Right _ -> fail "Expected at least one message"
+                Left err -> fail (formatParseError concatenated err)
+            Right _ -> fail "Expected at least one message in example1"
+            Left err -> fail (formatParseError example1 err)
+
+        it "second message matches example2" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (expectedMessage : _) } -> do
+              case Message.Parser.run { input: concatenated, streamIsDone: true } of
+                Right { messages: (_ : second : _) } -> do
+                  second.author `shouldEqual` expectedMessage.author
+                  second.subject `shouldEqual` expectedMessage.subject
+                  second.messageID `shouldEqual` expectedMessage.messageID
+                Right _ -> fail "Expected at least two messages"
+                Left err -> fail (formatParseError concatenated err)
+            Right _ -> fail "Expected at least one message in example2"
+            Left err -> fail (formatParseError example2 err)
+
+        it "third message matches example3" do
+          case Message.Parser.run { input: example3, streamIsDone: true } of
+            Right { messages: (expectedMessage : _) } -> do
+              case Message.Parser.run { input: concatenated, streamIsDone: true } of
+                Right { messages: (_ : _ : third : _) } -> do
+                  third.author `shouldEqual` expectedMessage.author
+                  third.subject `shouldEqual` expectedMessage.subject
+                  third.messageID `shouldEqual` expectedMessage.messageID
+                Right _ -> fail "Expected at least three messages"
+                Left err -> fail (formatParseError concatenated err)
+            Right _ -> fail "Expected at least one message in example3"
+            Left err -> fail (formatParseError example3 err)
+
+      describe "streamIsDone: false" do
+        it "parses successfully" do
+          case Message.Parser.run { input: concatenated, streamIsDone: false } of
+            Right _ -> pure unit
+            Left err -> fail (formatParseError concatenated err)
+
+        it "parses exactly two messages" do
+          case Message.Parser.run { input: concatenated, streamIsDone: false } of
+            Right { messages } -> List.length messages `shouldEqual` 2
+            Left err -> fail (formatParseError concatenated err)
+
+        it "first message matches example1" do
+          case Message.Parser.run { input: example1, streamIsDone: true } of
+            Right { messages: (expectedMessage : _) } -> do
+              case Message.Parser.run { input: concatenated, streamIsDone: false } of
+                Right { messages: (first : _) } -> do
+                  first.author `shouldEqual` expectedMessage.author
+                  first.subject `shouldEqual` expectedMessage.subject
+                  first.messageID `shouldEqual` expectedMessage.messageID
+                Right _ -> fail "Expected at least one message"
+                Left err -> fail (formatParseError concatenated err)
+            Right _ -> fail "Expected at least one message in example1"
+            Left err -> fail (formatParseError example1 err)
+
+        it "second message matches example2" do
+          case Message.Parser.run { input: example2, streamIsDone: true } of
+            Right { messages: (expectedMessage : _) } -> do
+              case Message.Parser.run { input: concatenated, streamIsDone: false } of
+                Right { messages: (_ : second : _) } -> do
+                  second.author `shouldEqual` expectedMessage.author
+                  second.subject `shouldEqual` expectedMessage.subject
+                  second.messageID `shouldEqual` expectedMessage.messageID
+                Right _ -> fail "Expected at least two messages"
+                Left err -> fail (formatParseError concatenated err)
+            Right _ -> fail "Expected at least one message in example2"
+            Left err -> fail (formatParseError example2 err)
+
+        it "has remainder equal to example3" do
+          case Message.Parser.run { input: concatenated, streamIsDone: false } of
+            Right { remainder } -> remainder `shouldEqual` example3
+            Left err -> fail (formatParseError concatenated err)
