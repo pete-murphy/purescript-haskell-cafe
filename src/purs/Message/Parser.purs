@@ -29,9 +29,13 @@ import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
-run :: String -> Either ParseError (List Message)
-run input =
-  Parsing.runParser input (many messageP)
+run :: Boolean -> String -> Either ParseError (List Message)
+run done input =
+  Parsing.runParser input
+    if done then
+      many messageP <* eof
+    else
+      many messageP
 
 foreign import parseRFC2822 :: String -> JSDate
 foreign import decodeRFC2047 :: String -> String
