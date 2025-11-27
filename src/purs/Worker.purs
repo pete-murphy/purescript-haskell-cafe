@@ -32,7 +32,7 @@ main = do
     Promise.Aff.toAffE (createSchema pglite)
     start <- liftEffect Now.now
     sample <- Promise.Aff.toAffE (fetchSample filename)
-    let result = Message.Parser.run sample
+    let result = Message.Parser.run true sample
     end <- liftEffect Now.now
     Console.logShow (Instant.diff end start :: Milliseconds)
 
