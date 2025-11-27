@@ -521,6 +521,11 @@ spec = do
             Left err -> fail (formatParseError "" err)
 
       describe "when done is false" do
+        it "accepts empty input" do
+          case Message.Parser.run false "" of
+            Right messages -> List.length messages `shouldEqual` 0
+            Left err -> fail (formatParseError "" err)
+
         it "accepts complete message with no trailing content" do
           case Message.Parser.run false example1 of
             Right messages -> List.length messages `shouldEqual` 1
