@@ -530,3 +530,19 @@ spec = do
           case Message.Parser.run false example1 of
             Right messages -> List.length messages `shouldEqual` 1
             Left err -> fail (formatParseError example1 err)
+
+        it "succeeds with partial message at end" do
+          -- Add a partial message header after a complete message
+          let partialInput = example1 <> "From someone@example.com  Mon Jan  1 00:00:00 2020\n"
+          case Message.Parser.run false partialInput of
+            Right messages -> do
+              -- Should parse the first complete message, leave the partial one
+              List.length messages `shouldEqual` 1
+            Left err -> fail (formatParseError partialInput err)
+
+        it "fails with done=true when there's garbage after complete messages" do
+          -- This is a negative test: done=true should fail if there's non-EOF content
+          let invalidInput = example1 <> "GARBAGE"
+          case Message.Parser.run true invalidInput of
+            Right _ -> fail "Expected parse to fail with garbage after message"
+            Left _ -> pure unit  -- Expected to fail
