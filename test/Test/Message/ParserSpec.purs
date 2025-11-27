@@ -253,6 +253,11 @@ spec = do
           Right _ -> pure unit
           Left err -> fail (formatParseError example1 err)
 
+      it "has empty remainder" do
+        case Message.Parser.run example1 of
+          Right { remainder } -> remainder `shouldEqual` ""
+          Left err -> fail (formatParseError example1 err)
+
       it "parses exactly one message" do
         case Message.Parser.run example1 of
           Right { messages } -> List.length messages `shouldEqual` 1
@@ -286,6 +291,11 @@ spec = do
       it "parses successfully" do
         case Message.Parser.run example2 of
           Right _ -> pure unit
+          Left err -> fail (formatParseError example2 err)
+
+      it "has empty remainder" do
+        case Message.Parser.run example2 of
+          Right { remainder } -> remainder `shouldEqual` ""
           Left err -> fail (formatParseError example2 err)
 
       it "parses exactly one message" do
@@ -337,6 +347,11 @@ spec = do
           Right _ -> pure unit
           Left err -> fail (formatParseError example3 err)
 
+      it "has empty remainder" do
+        case Message.Parser.run example3 of
+          Right { remainder } -> remainder `shouldEqual` ""
+          Left err -> fail (formatParseError example3 err)
+
       it "parses exactly one message" do
         case Message.Parser.run example3 of
           Right { messages } -> List.length messages `shouldEqual` 1
@@ -384,6 +399,11 @@ spec = do
       it "parses successfully" do
         case Message.Parser.run example4 of
           Right _ -> pure unit
+          Left err -> fail (formatParseError example4 err)
+
+      it "has empty remainder" do
+        case Message.Parser.run example4 of
+          Right { remainder } -> remainder `shouldEqual` ""
           Left err -> fail (formatParseError example4 err)
 
       it "parses exactly one message" do
@@ -435,6 +455,11 @@ spec = do
           Right _ -> pure unit
           Left err -> fail (formatParseError example5 err)
 
+      it "has empty remainder" do
+        case Message.Parser.run example5 of
+          Right { remainder } -> remainder `shouldEqual` ""
+          Left err -> fail (formatParseError example5 err)
+
       it "parses exactly one message" do
         case Message.Parser.run example5 of
           Right { messages } -> List.length messages `shouldEqual` 1
@@ -484,6 +509,11 @@ spec = do
           Right _ -> pure unit
           Left err -> fail (formatParseError example6 err)
 
+      it "has empty remainder" do
+        case Message.Parser.run example6 of
+          Right { remainder } -> remainder `shouldEqual` ""
+          Left err -> fail (formatParseError example6 err)
+
       it "parses exactly one message" do
         case Message.Parser.run example6 of
           Right { messages } -> List.length messages `shouldEqual` 1
@@ -493,6 +523,11 @@ spec = do
       it "parses successfully" do
         case Message.Parser.run example7 of
           Right _ -> pure unit
+          Left err -> fail (formatParseError example7 err)
+
+      it "has empty remainder" do
+        case Message.Parser.run example7 of
+          Right { remainder } -> remainder `shouldEqual` ""
           Left err -> fail (formatParseError example7 err)
 
       it "parses exactly one message" do
