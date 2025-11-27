@@ -29,6 +29,14 @@ import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
+-- | Parse messages from input string.
+-- |
+-- | The `done` parameter controls EOF handling:
+-- | - `true`: Expects EOF after parsing messages. Use when parsing complete data.
+-- |   Fails if any unconsumed content remains.
+-- | - `false`: Does not require EOF. Use for streaming/incremental parsing.
+-- |   Succeeds with complete messages parsed, leaving partial messages unconsumed
+-- |   for buffering and retry with subsequent data chunks.
 run :: Boolean -> String -> Either ParseError (List Message)
 run done input =
   Parsing.runParser input
