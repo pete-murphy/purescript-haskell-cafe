@@ -7,49 +7,75 @@ import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
 import Data.JSDate as JSDate
 import Data.String.CodeUnits as String.CodeUnits
+import Data.Traversable (for_)
 import Data.Traversable as Traversable
 import Effect (Effect)
 import Effect.Aff (Milliseconds)
 import Effect.Aff as Aff
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Effect.Now as Now
+import Effect.Ref as Ref
 import Message (Message)
 import Message.Parser as Message.Parser
 import MessageID as MessageID
-import Parsing (Position(..), parseErrorMessage, parseErrorPosition)
+import Parsing (ParseError, Position(..), parseErrorMessage, parseErrorPosition)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
 
 main :: Effect Unit
 main = do
   Console.log "Worker started in PureScript"
-  let filename = "2017-November.txt"
+
+  bufferRef <- Ref.new ""
 
   Aff.launchAff_ do
     pglite <- Promise.Aff.toAffE newPGlite
     Promise.Aff.toAffE (createSchema pglite)
     start <- liftEffect Now.now
-    sample <- Promise.Aff.toAffE (fetchSample filename)
-    let result = Message.Parser.run { input: sample, streamIsDone: true }
+
     end <- liftEffect Now.now
     Console.logShow (Instant.diff end start :: Milliseconds)
 
-    case result of
-      Left err -> do
-        let msg = parseErrorMessage err
-        let Position { index } = parseErrorPosition err
-        Console.log (msg <> " at position " <> show index)
-        let context = String.CodeUnits.slice (index - 20) (index + 20) sample
-        Console.log ("Context: \n" <> context)
-      Right { messages } -> do
-        messagesForPGlite <- liftEffect do
-          Traversable.for (Array.fromFoldable messages) \message -> do
-            messageForPGlite filename message
-        Promise.Aff.toAffE (insertMessages pglite messagesForPGlite)
-        pure unit
+    for_ filenames \filename -> do
+      let
+        callback { chunk, isDone } = Aff.launchAff_ do
+          buffer <- liftEffect (Ref.read bufferRef)
+          let result = Message.Parser.run { input: buffer <> chunk, streamIsDone: isDone }
+          case result of
+            Left err -> do
+              handleParseError chunk err
+            Right { messages } -> do
+              messagesForPGlite <- liftEffect do
+                Traversable.for (Array.fromFoldable messages) \message -> do
+                  messageForPGlite filename message
+              if Array.length messagesForPGlite > 0 then do
+                Promise.Aff.toAffE (insertMessages pglite messagesForPGlite)
+              else
+                pure unit
+              pure unit
 
-foreign import fetchSample :: String -> Effect (Promise String)
+      liftEffect (fetchChunk { filename, callback })
+
+handleParseError
+  :: forall m
+   . MonadEffect m
+  => String
+  -> ParseError
+  -> m Unit
+handleParseError input err = do
+  let
+    msg = parseErrorMessage err
+    Position { index } = parseErrorPosition err
+    context = String.CodeUnits.slice (index - 20) (index + 20) input
+  Console.log (msg <> " at position " <> show index)
+  Console.log ("Context: \n" <> context)
+
+foreign import fetchChunk
+  :: { filename :: String
+     , callback :: { chunk :: String, isDone :: Boolean } -> Effect Unit
+     }
+  -> Effect Unit
 
 foreign import data PGlite :: Type
 

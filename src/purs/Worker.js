@@ -66,7 +66,6 @@ export function insertMessages(pglite) {
         content,
         month_file,
       } = row;
-      console.log(row);
 
       return [
         id,
@@ -81,7 +80,11 @@ export function insertMessages(pglite) {
       ];
     });
 
-    const query = `INSERT INTO messages (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} ON CONFLICT DO NOTHING;`;
+    const query = `
+      INSERT INTO messages 
+        (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} 
+        ON CONFLICT DO NOTHING;
+    `;
 
     return () => {
       return pglite.query(query, flattened);
@@ -93,32 +96,26 @@ export function queryMessages(pglite) {
   return () => pglite.query(`SELECT * FROM messages;`);
 }
 
-export function fetchSample(filename) {
-  return () => {
-    // let txt = txts[Math.floor(Math.random() * txts.length)];
-    let txt = filename;
-    // txt = "2022-April.txt";
-    // return Promise.resolve(sample);
-    // document.body.appendChild(document.createElement("h1")).textContent = txt;
-    // self.postMessage({ type: "fetch", message: txt });
-    if (txt.endsWith(".txt")) {
-      return fetch(`/haskell-cafe/${txt}`).then((response) => response.text());
-    } else {
-      let sample = "";
-      return fetch(`/haskell-cafe/${txt}`)
-        .then((response) =>
+export function fetchChunk({ filename, callback }) {
+  return () =>
+    filename.endsWith(".gz")
+      ? fetch(`/haskell-cafe/${filename}`).then((response) =>
           response.body
             .pipeThrough(new DecompressionStream("gzip"))
             .pipeThrough(new TextDecoderStream())
-            .pipeTo(
-              new WritableStream({
-                write(chunk) {
-                  sample += chunk;
-                },
-              })
+            .getReader()
+            .read()
+            .then(({ done, value }) =>
+              callback({ chunk: value, isDone: done })()
             )
         )
-        .then(() => (console.log(sample), sample));
-    }
-  };
+      : fetch(`/haskell-cafe/${filename}`).then((response) =>
+          response.body
+            .pipeThrough(new TextDecoderStream())
+            .getReader()
+            .read()
+            .then(({ done, value }) =>
+              callback({ chunk: value, isDone: done })()
+            )
+        );
 }
