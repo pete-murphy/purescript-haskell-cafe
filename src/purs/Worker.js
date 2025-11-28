@@ -105,8 +105,11 @@ export function fetchChunk({ filename, callback }) {
             .pipeThrough(new TextDecoderStream())
             .getReader()
             .read()
-            .then(({ done, value }) =>
-              callback({ chunk: value, isDone: done })()
+            .then(
+              ({ done, value }) =>
+                new Promise((resolve, reject) =>
+                  callback({ chunk: value, isDone: done, resolve, reject })()
+                )
             )
         )
       : fetch(`/haskell-cafe/${filename}`).then((response) =>
@@ -114,8 +117,11 @@ export function fetchChunk({ filename, callback }) {
             .pipeThrough(new TextDecoderStream())
             .getReader()
             .read()
-            .then(({ done, value }) =>
-              callback({ chunk: value, isDone: done })()
+            .then(
+              ({ done, value }) =>
+                new Promise((resolve, reject) =>
+                  callback({ chunk: value, isDone: done, resolve, reject })()
+                )
             )
         );
 }

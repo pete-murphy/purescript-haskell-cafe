@@ -7,8 +7,7 @@ import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
 import Data.JSDate as JSDate
 import Data.String.CodeUnits as String.CodeUnits
-import Data.Traversable (for_)
-import Data.Traversable as Traversable
+import Data.Traversable (for, for_)
 import Effect (Effect)
 import Effect.Aff (Milliseconds)
 import Effect.Aff as Aff
@@ -39,21 +38,23 @@ main = do
 
     for_ filenames \filename -> do
       let
-        callback { chunk, isDone } = Aff.launchAff_ do
+        callback { chunk, isDone, resolve, reject } = Aff.launchAff_ do
           buffer <- liftEffect (Ref.read bufferRef)
           let result = Message.Parser.run { input: buffer <> chunk, streamIsDone: isDone }
+          Console.logShow result
           case result of
             Left err -> do
               handleParseError chunk err
+              liftEffect reject
             Right { messages } -> do
               messagesForPGlite <- liftEffect do
-                Traversable.for (Array.fromFoldable messages) \message -> do
+                for (Array.fromFoldable messages) \message -> do
                   messageForPGlite filename message
               if Array.length messagesForPGlite > 0 then do
                 Promise.Aff.toAffE (insertMessages pglite messagesForPGlite)
               else
                 pure unit
-              pure unit
+              liftEffect resolve
 
       liftEffect (fetchChunk { filename, callback })
 
@@ -73,7 +74,13 @@ handleParseError input err = do
 
 foreign import fetchChunk
   :: { filename :: String
-     , callback :: { chunk :: String, isDone :: Boolean } -> Effect Unit
+     , callback ::
+         { chunk :: String
+         , isDone :: Boolean
+         , resolve :: Effect Unit
+         , reject :: Effect Unit
+         }
+         -> Effect Unit
      }
   -> Effect Unit
 
