@@ -30,7 +30,14 @@ import Parsing.Combinators (between, lookAhead, many, many1, many1Till, manyTill
 import Parsing.String (anyChar, anyCodePoint, char, eof, satisfy, string)
 import Parsing.String.Basic (skipSpaces)
 
-run :: { input :: String, streamIsDone :: Boolean } -> Either ParseError { remainder :: String, messages :: List Message }
+run
+  :: { input :: String
+     , streamIsDone :: Boolean
+     }
+  -> Either ParseError
+       { remainder :: String
+       , messages :: List Message
+       }
 run { input, streamIsDone } =
   Parsing.runParser input do
     messages <- many (try (messageP { expectEOF: streamIsDone }))
@@ -114,11 +121,13 @@ messageIDP = do
   _ <- string "Message-ID: "
   MessageID.parser <* string "\n"
 
-contentP :: { expectEOF :: Boolean } -> Parser String String
+contentP
+  :: { expectEOF :: Boolean }
+  -> Parser String String
 contentP { expectEOF } = do
   lines <- many1Till anyLineP
     (lookAhead (void (try headerP)) <|> guard expectEOF *> eof)
-  pure (String.joinWith "\n" (Array.fromFoldable lines))
+  pure (String.trim (String.joinWith "\n" (Array.fromFoldable lines)))
 
 anyLineP :: Parser String String
 anyLineP = do
@@ -138,7 +147,9 @@ headerP = do
   messageID <- messageIDP
   pure { author, subject, messageID, inReplyTo, references, date }
 
-messageP :: { expectEOF :: Boolean } -> Parser String Message
+messageP
+  :: { expectEOF :: Boolean }
+  -> Parser String Message
 messageP { expectEOF } = do
   { author, subject, messageID, inReplyTo, references, date } <- headerP
   content <- contentP { expectEOF }

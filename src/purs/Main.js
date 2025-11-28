@@ -75,7 +75,7 @@ function renderMessages(res, appElement) {
               From: ${escapeHtml(row.author || "Unknown")} | ${formatDate(row.date)}
             </div>
             ${row.id ? `<div class="message-meta">ID: ${escapeHtml(row.id)}</div>` : ""}
-            ${row.in_reply_to ? `<div class="message-meta">In-Reply-To: ${escapeHtml(row.in_reply_to)}</div>` : ""}
+            ${row.in_reply_to.length > 0 ? `<div class="message-meta">In-Reply-To: ${row.in_reply_to.map((ref) => escapeHtml(ref)).join(", ")}</div>` : ""}
             ${row.month_file ? `<div class="message-meta">File: ${escapeHtml(row.month_file)}</div>` : ""}
           </div>
           
@@ -87,8 +87,7 @@ function renderMessages(res, appElement) {
               : ""
           }
         </div>
-        ${index < rows.length - 1 ? '<div class="message-separator"></div>' : ""}
-      `
+        ${index < rows.length - 1 ? '<div class="message-separator"></div>' : ""}`
               )
               .join("")
       }

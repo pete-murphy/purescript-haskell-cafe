@@ -6,7 +6,6 @@ import Data.Array as Array
 import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
 import Data.JSDate as JSDate
-import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
 import Data.Traversable as Traversable
 import Effect (Effect)
@@ -59,35 +58,30 @@ foreign import createSchema :: PGlite -> Effect (Promise Unit)
 foreign import insertMessages :: PGlite -> Array MessageForPGlite -> Effect (Promise Unit)
 
 type MessageForPGlite =
-  Array String
+  { id :: String
+  , subject :: String
+  , author :: String
+  , date :: String
+  , in_reply_to :: Array String
+  , refs :: Array String
+  , content :: String
+  , month_file :: String
+  }
 
 messageForPGlite :: String -> Message -> Effect MessageForPGlite
 messageForPGlite monthFile message = do
   dateString <- JSDate.fromDateTime message.date # JSDate.toISOString
   pure
-    ( [ MessageID.toString message.messageID
-      , message.subject
-      , message.author
-      , dateString
-      , map MessageID.toString message.inReplyTo
-          # String.joinWith ","
-      , map MessageID.toString message.references
-          # String.joinWith ","
-      , message.content
-      , monthFile
-      ]
+    ( { id: MessageID.toString message.messageID
+      , subject: message.subject
+      , author: message.author
+      , date: dateString
+      , in_reply_to: map MessageID.toString message.inReplyTo
+      , refs: map MessageID.toString message.references
+      , content: message.content
+      , month_file: monthFile
+      }
     )
-
--- "id",
--- "subject",
--- "from_addr",
--- "date",
--- "in_reply_to",
--- "refs",
--- "content",
--- "month_file",
--- "path",
--- "search",
 
 filenames :: Array String
 filenames =

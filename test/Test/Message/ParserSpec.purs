@@ -654,6 +654,39 @@ spec = do
             Right { remainder } -> remainder `shouldEqual` example7
             Left err -> fail (formatParseError example7 err)
 
+    -- describe "example 8" do
+    --   describe "streamIsDone: true" do
+    --     it "parses successfully" do
+    --       case Message.Parser.run { input: example8, streamIsDone: true } of
+    --         Right _ -> pure unit
+    --         Left err -> fail (formatParseError example8 err)
+
+    --     it "has remainder equal to input (example8 missing Message-ID)" do
+    --       case Message.Parser.run { input: example8, streamIsDone: true } of
+    --         Right { remainder } -> remainder `shouldEqual` example8
+    --         Left err -> fail (formatParseError example8 err)
+
+    --     it "parses zero messages (example8 missing Message-ID)" do
+    --       case Message.Parser.run { input: example8, streamIsDone: true } of
+    --         Right { messages } -> List.length messages `shouldEqual` 0
+    --         Left err -> fail (formatParseError example8 err)
+
+    --   describe "streamIsDone: false" do
+    --     it "parses successfully" do
+    --       case Message.Parser.run { input: example8, streamIsDone: false } of
+    --         Right _ -> pure unit
+    --         Left err -> fail (formatParseError example8 err)
+
+    --     it "has messages list empty" do
+    --       case Message.Parser.run { input: example8, streamIsDone: false } of
+    --         Right { messages } -> List.length messages `shouldEqual` 0
+    --         Left err -> fail (formatParseError example8 err)
+
+    --     it "has remainder equal to input" do
+    --       case Message.Parser.run { input: example8, streamIsDone: false } of
+    --         Right { remainder } -> remainder `shouldEqual` example8
+    --         Left err -> fail (formatParseError example8 err)
+
     describe "concatenated examples (example1 <> example2 <> example3)" do
       let
         concatenated = example1 <> example2 <> example3
