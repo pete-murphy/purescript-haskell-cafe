@@ -15,3 +15,10 @@
 
 @deploy:
     npx wrangler deploy
+
+@file-server:
+    npx http-server -p 8080 ./file-server
+
+# Populate the file server with the haskell-cafe archive
+@script:
+    npx spago run --main Script.Main

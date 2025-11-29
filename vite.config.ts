@@ -11,7 +11,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/haskell-cafe": {
-        target: "https://mail.haskell.org/pipermail",
+        // target: "https://mail.haskell.org/pipermail",
+        target: "http://localhost:8080",
         changeOrigin: true,
       },
     },
