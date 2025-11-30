@@ -13,7 +13,7 @@ import Effect.Class.Console as Console
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
 
-foreign import _fetch :: String -> Effect (Promise Unit)
+foreign import fetchFileImpl :: String -> Effect (Promise Unit)
 
 main :: Effect Unit
 main = Aff.launchAff_ do
@@ -23,22 +23,21 @@ main = Aff.launchAff_ do
     Console.log ("Putting " <> filename <> " into work queue")
     AVar.put (Just filename) workQueue
 
-  for_ (Array.range 1 4) \_ -> Aff.forkAff do
+  let concurrency = 12
+  for_ (Array.range 1 concurrency) \_ -> Aff.forkAff do
     AVar.put Nothing workQueue
 
-  for_ (Array.range 1 4) \i -> do
+  for_ (Array.range 1 concurrency) \i -> do
     Console.log ("Forking thread " <> show i)
     Aff.forkAff do
       Lazy.fix \loop -> do
         maybeURL <- AVar.take workQueue
         case maybeURL of
           Just url -> do
-            Console.log ("Thread " <> show i <> " fetching " <> url)
-            Promise.Aff.toAffE (_fetch url)
-            Console.log ("Thread " <> show i <> " fetched " <> url)
+            Promise.Aff.toAffE (fetchFileImpl url)
             loop
           Nothing -> do
-            Console.log ("Thread " <> show i <> " done")
+            pure unit
 
 filenames :: Array String
 filenames =
