@@ -96,32 +96,32 @@ export function queryMessages(pglite) {
   return () => pglite.query(`SELECT * FROM messages;`);
 }
 
-export function fetchChunk({ filename, callback }) {
-  return () =>
+export function fetchStreamImpl({ filename, onChunk }) {
+  return (affError, affSuccess) => {
+    const controller = new AbortController();
+    fetchStream(filename, onChunk).then(affSuccess).catch(affError);
+    return (error, _cancelError, cancelSuccess) => {
+      controller.abort(error);
+      cancelSuccess();
+    };
+  };
+}
+
+async function fetchStream(filename, onChunk) {
+  const res = await fetch(`/haskell-cafe/${filename}`);
+  const decoded = (
     filename.endsWith(".gz")
-      ? fetch(`/haskell-cafe/${filename}`).then((response) =>
-          response.body
-            .pipeThrough(new DecompressionStream("gzip"))
-            .pipeThrough(new TextDecoderStream())
-            .getReader()
-            .read()
-            .then(
-              ({ done, value }) =>
-                new Promise((resolve, reject) =>
-                  callback({ chunk: value, isDone: done, resolve, reject })()
-                )
-            )
-        )
-      : fetch(`/haskell-cafe/${filename}`).then((response) =>
-          response.body
-            .pipeThrough(new TextDecoderStream())
-            .getReader()
-            .read()
-            .then(
-              ({ done, value }) =>
-                new Promise((resolve, reject) =>
-                  callback({ chunk: value, isDone: done, resolve, reject })()
-                )
-            )
-        );
+      ? res.body.pipeThrough(new DecompressionStream("gzip"))
+      : res.body
+  ).pipeThrough(new TextDecoderStream());
+  const reader = decoded.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      onChunk(null)();
+      break;
+    }
+    onChunk(value)();
+  }
 }

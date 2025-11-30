@@ -6,11 +6,16 @@ import Data.Array as Array
 import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
 import Data.JSDate as JSDate
+import Data.Maybe (Maybe(..))
+import Data.Nullable (Nullable)
+import Data.Nullable as Nullable
 import Data.String.CodeUnits as String.CodeUnits
 import Data.Traversable (for, for_)
 import Effect (Effect)
 import Effect.Aff (Milliseconds)
 import Effect.Aff as Aff
+import Effect.Aff.Compat (EffectFnAff)
+import Effect.Aff.Compat as Aff.Compat
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Effect.Now as Now
@@ -33,19 +38,19 @@ main = do
     Promise.Aff.toAffE (createSchema pglite)
     start <- liftEffect Now.now
 
-    end <- liftEffect Now.now
-    Console.logShow (Instant.diff end start :: Milliseconds)
-
     for_ filenames \filename -> do
       let
-        callback { chunk, isDone, resolve, reject } = Aff.launchAff_ do
+        handleChunk maybeChunk = Aff.launchAff_ do
           buffer <- liftEffect (Ref.read bufferRef)
-          let result = Message.Parser.run { input: buffer <> chunk, streamIsDone: isDone }
+          let
+            { input, streamIsDone } = case maybeChunk of
+              Just chunk -> { input: buffer <> chunk, streamIsDone: false }
+              Nothing -> { input: buffer, streamIsDone: true }
+            result = Message.Parser.run { input, streamIsDone }
           Console.logShow result
           case result of
             Left err -> do
-              handleParseError chunk err
-              liftEffect reject
+              handleParseError input err
             Right { messages } -> do
               messagesForPGlite <- liftEffect do
                 for (Array.fromFoldable messages) \message -> do
@@ -54,9 +59,11 @@ main = do
                 Promise.Aff.toAffE (insertMessages pglite messagesForPGlite)
               else
                 pure unit
-              liftEffect resolve
 
-      liftEffect (fetchChunk { filename, callback })
+      Aff.Compat.fromEffectFnAff (fetchStreamImpl { filename, onChunk: Nullable.toMaybe >>> handleChunk })
+
+    end <- liftEffect Now.now
+    Console.logShow (Instant.diff end start :: Milliseconds)
 
 handleParseError
   :: forall m
@@ -72,17 +79,11 @@ handleParseError input err = do
   Console.log (msg <> " at position " <> show index)
   Console.log ("Context: \n" <> context)
 
-foreign import fetchChunk
+foreign import fetchStreamImpl
   :: { filename :: String
-     , callback ::
-         { chunk :: String
-         , isDone :: Boolean
-         , resolve :: Effect Unit
-         , reject :: Effect Unit
-         }
-         -> Effect Unit
+     , onChunk :: Nullable String -> Effect Unit
      }
-  -> Effect Unit
+  -> EffectFnAff Unit
 
 foreign import data PGlite :: Type
 
