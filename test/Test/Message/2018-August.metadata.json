@@ -1,0 +1,754 @@
+[
+  {
+    "title": "JOB | Permanent Java Development Manager (Montreal,\tCanada)",
+    "author": "James Tobin"
+  },
+  {
+    "title": "JOB | Permanent Java Developer (Montreal, Canada)",
+    "author": "James Tobin"
+  },
+  {
+    "title": "why different type variables enforce different types?",
+    "author": "Rui Azevedo"
+  },
+  {
+    "title": "why different type variables enforce different types?",
+    "author": "Ben"
+  },
+  {
+    "title": "JOB | Permanent Java Developer (Montreal, Canada)",
+    "author": "Tom Ellis"
+  },
+  {
+    "title": "JOB | Permanent Java Developer (Montreal, Canada)",
+    "author": "Kim-Ee Yeoh"
+  },
+  {
+    "title": "JOB | Permanent Java Developer (Montreal, Canada)",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "Access violation when stack haddock haskell-src-exts since LTS 12.0",
+    "author": "Carter Schonwald"
+  },
+  {
+    "title": "why different type variables enforce different types?",
+    "author": "Silvio Frischknecht"
+  },
+  {
+    "title": "hs-boot and (micro)lenses",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "hp2pretty-0.9",
+    "author": "Claude Heiland-Allen"
+  },
+  {
+    "title": "Fixity of ($) and (.) vs. (&) and (>>>)",
+    "author": "Frederik Hanghøj Iversen"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Gregory Wright"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Gregory Wright"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Claude Heiland-Allen"
+  },
+  {
+    "title": "hs-boot and (micro)lenses",
+    "author": "Massimo Zaniboni"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Sergiu Ivanov"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Sergiu Ivanov"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Sergiu Ivanov"
+  },
+  {
+    "title": "Need some help figuring out how to use the repl\twith reflex using only stack",
+    "author": "Magnus Therning"
+  },
+  {
+    "title": "How to turn Integer into Proxy (n :: KnownNat) with n equal to the integer?",
+    "author": "David Banas"
+  },
+  {
+    "title": "How to turn Integer into Proxy (n :: KnownNat) with n equal to the integer?",
+    "author": "David Kraeutmann"
+  },
+  {
+    "title": "Need some help figuring out how to use the repl with reflex using only stack",
+    "author": "Michael Litchard"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "dominic at steinitz.org"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "dominic at steinitz.org"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "dominic at steinitz.org"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Bertram Felgenhauer"
+  },
+  {
+    "title": "A Performance Puzzle",
+    "author": "Gregory Wright"
+  },
+  {
+    "title": "[random-fu] sampleRVar with StdGen in RWS?",
+    "author": "Sergiu Ivanov"
+  },
+  {
+    "title": "ANN: lsp-test-0.1.0.0",
+    "author": "Luke Lau"
+  },
+  {
+    "title": "Fixity of ($) and (.) vs. (&) and (>>>)",
+    "author": "Artem Pelenitsyn"
+  },
+  {
+    "title": "Working around floating-point inaccuracies",
+    "author": "Michail Pevnev"
+  },
+  {
+    "title": "Working around floating-point inaccuracies",
+    "author": "Joachim Durchholz"
+  },
+  {
+    "title": "Working around floating-point inaccuracies",
+    "author": "Michail Pevnev"
+  },
+  {
+    "title": "Working around floating-point inaccuracies",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Bizarre GHC error.",
+    "author": "David Banas"
+  },
+  {
+    "title": "Bizarre GHC error.",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "How to increase solver iterations?",
+    "author": "David Banas"
+  },
+  {
+    "title": "How to increase solver iterations?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "How to increase solver iterations?",
+    "author": "David Banas"
+  },
+  {
+    "title": "How to increase solver iterations?",
+    "author": "David Banas"
+  },
+  {
+    "title": "How to increase solver iterations?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Working around floating-point inaccuracies",
+    "author": "Frank Staals"
+  },
+  {
+    "title": "Call for Participation: ICFP 2018",
+    "author": "Lindsey Kuper"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Lana Black"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Mark Wotton"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Mark Wotton"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Claude Heiland-Allen"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Lana Black"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Lana Black"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Lana Black"
+  },
+  {
+    "title": "Aeson memory use",
+    "author": "Saurabh Nanda"
+  },
+  {
+    "title": "Fwd: [Haskell] [ANNOUNCE] GHC 8.6.1-beta1 available",
+    "author": "Dan Burton"
+  },
+  {
+    "title": "Fwd: [Haskell] [ANNOUNCE] GHC 8.6.1-beta1\tavailable",
+    "author": "Alan & Kim Zimmerman"
+  },
+  {
+    "title": "hs-boot and (micro)lenses",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "cpphs broken on GHC 8.6.1",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "cpphs broken on GHC 8.6.1",
+    "author": "Adam Bergmark"
+  },
+  {
+    "title": "Google Summer of Code : CodeWorld",
+    "author": "Krystal Maughan"
+  },
+  {
+    "title": "HDBC packages looking for maintainer",
+    "author": "Erik Hesselink"
+  },
+  {
+    "title": "Learning & Haskell Job Board",
+    "author": "Alex Mesropians"
+  },
+  {
+    "title": "What is the right way to use unsafeCoerce?",
+    "author": "Cosmia Fu"
+  },
+  {
+    "title": "What is the right way to use unsafeCoerce?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "What is the right way to use unsafeCoerce?",
+    "author": "Cosmia Fu"
+  },
+  {
+    "title": "First Call for Participation for IFL 2018 (Implementation and Application of Functional Languages)",
+    "author": "Jurriaan Hage"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian Nadales"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Artem Pelenitsyn"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Imants Cekusins"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "David Kraeutmann"
+  },
+  {
+    "title": "Status of the Hi Haddock project",
+    "author": "Simon Jakobi"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian Nadales"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Tom Ellis"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Bryan Richter"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian Nadales"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian Nadales"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Imants Cekusins"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Matt"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Bryan Richter"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Artem Pelenitsyn"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Damian Nadales"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "A function synonym is not (by default) as\tpolymorphic as the original.",
+    "author": "Jeffrey Brown"
+  },
+  {
+    "title": "A function synonym is not (by default) as polymorphic as the original.",
+    "author": "Theodore Lief Gannon"
+  },
+  {
+    "title": "Is there a library that has a strict version of `sum`?",
+    "author": "Tom Ellis"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Michael Snoyman"
+  },
+  {
+    "title": "How to turn Integer into Proxy (n :: KnownNat) with n equal to the integer?",
+    "author": "Johannes Waldmann"
+  },
+  {
+    "title": "How to turn Integer into Proxy (n :: KnownNat) with n equal to the integer?",
+    "author": "Divesh Otwani"
+  },
+  {
+    "title": "WG:",
+    "author": "Stefan Chacko"
+  },
+  {
+    "title": "WG:",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "WG:",
+    "author": "Massimo Zaniboni"
+  },
+  {
+    "title": "WG:",
+    "author": "Paul"
+  },
+  {
+    "title": "WG:",
+    "author": "Matt"
+  },
+  {
+    "title": "First CfP: JFP Special Issue on The Theory and Practice of Algebraic Effects and Handlers",
+    "author": "KC Sivaramakrishnan"
+  },
+  {
+    "title": "multiline mode on ghci 8.2.2",
+    "author": "Fabien R"
+  },
+  {
+    "title": "multiline mode on ghci 8.2.2",
+    "author": "Ivan Lazar Miljenovic"
+  },
+  {
+    "title": "multiline mode on ghci 8.2.2",
+    "author": "Jos Kusiek"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "André Popovitch"
+  },
+  {
+    "title": "Possibly an endless loop in my benchmark code?",
+    "author": "Michail Pevnev"
+  },
+  {
+    "title": "Is there a library that has a strict version of\t`sum`?",
+    "author": "Yitzchak Gale"
+  },
+  {
+    "title": "Six new assistant/associate professor positions in\tNottingham",
+    "author": "Graham Hutton"
+  },
+  {
+    "title": "how do FFI calls show up in profiling info?",
+    "author": "Johannes Waldmann"
+  },
+  {
+    "title": "DSLDI 2018: Extended Call for Talk Proposals",
+    "author": "Sam Tobin-Hochstadt"
+  },
+  {
+    "title": "how do FFI calls show up in profiling info?",
+    "author": "Ömer Sinan Ağacan"
+  },
+  {
+    "title": "ANN: leancheck-v0.7.2,\tenumerative QuickCheck-like testing",
+    "author": "Rudy Matela"
+  },
+  {
+    "title": "Access violation when stack haddock haskell-src-exts since LTS 12.0",
+    "author": "Jeroen Bransen"
+  },
+  {
+    "title": "Access violation when stack haddock haskell-src-exts since LTS 12.0",
+    "author": "Yuji Yamamoto"
+  },
+  {
+    "title": "Access violation when stack haddock haskell-src-exts since LTS 12.0",
+    "author": "Jeroen Bransen"
+  },
+  {
+    "title": "CFP: 4th International Workshop on Real World Domain Specific Languages",
+    "author": "Simon Thompson"
+  },
+  {
+    "title": "How to express constraint succeeded?",
+    "author": "Paul"
+  },
+  {
+    "title": "How to express constraint succeeded?",
+    "author": "Li-yao Xia"
+  },
+  {
+    "title": "How to express constraint succeeded?",
+    "author": "Paul"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Doaitse Swierstra"
+  },
+  {
+    "title": "GHC gets simpler!?",
+    "author": "Jeffrey Brown"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Paul"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Doaitse Swierstra"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Paul"
+  },
+  {
+    "title": "Cobertura from .tix/.mix",
+    "author": "Paul"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Isaac Elliott"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Paul"
+  },
+  {
+    "title": "Applying typed hole proposal leads to compilation\tfailure",
+    "author": "Vlatko Basic"
+  },
+  {
+    "title": "Applying typed hole proposal leads to compilation failure",
+    "author": "mniip"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Applying typed hole proposal leads to\tcompilation failure",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Applying typed hole proposal leads to compilation failure",
+    "author": "mniip"
+  },
+  {
+    "title": "Blog post about modelling state machines with free\tcategories",
+    "author": "Marcin Szamotulski"
+  },
+  {
+    "title": "OT: compiler writing like company from EU like\tcountry having made more than 3e6 sales?",
+    "author": "Marc Weber"
+  },
+  {
+    "title": "Does GADTs imply ExistentialQuantification?",
+    "author": "Cosmia Fu"
+  },
+  {
+    "title": "Does GADTs imply ExistentialQuantification?",
+    "author": "David Feuer"
+  },
+  {
+    "title": "Does GADTs imply ExistentialQuantification?",
+    "author": "Ömer Sinan Ağacan"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Paul"
+  },
+  {
+    "title": "Munich Haskell Meeting, 2018-08-30 @ 19:30",
+    "author": "Leah Neukirchen"
+  },
+  {
+    "title": "Does GADTs imply ExistentialQuantification?",
+    "author": "Doaitse Swierstra"
+  },
+  {
+    "title": "Does GADTs imply ExistentialQuantification?",
+    "author": "Doaitse Swierstra"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Ghc error messages on Windows",
+    "author": "Kees Bleijenberg"
+  },
+  {
+    "title": "Ghc error messages on Windows",
+    "author": "Gleb Popov"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Benjamin Franksen"
+  },
+  {
+    "title": "Mapping of async tasks to threads?",
+    "author": "Viktor Dukhovni"
+  },
+  {
+    "title": "Diagrams",
+    "author": "Roger Mason"
+  },
+  {
+    "title": "Ghc error messages on Windows",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Diagrams",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "Diagrams",
+    "author": "Vanessa McHale"
+  },
+  {
+    "title": "Parsing Haskell with Layout",
+    "author": "Benjamin Redelings"
+  },
+  {
+    "title": "Parsing Haskell with Layout",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Setting RTS thread names useful?",
+    "author": "Viktor Dukhovni"
+  },
+  {
+    "title": "Setting RTS thread names useful?",
+    "author": "Joachim Durchholz"
+  },
+  {
+    "title": "Dependent types, weak references, and stable names",
+    "author": "David Feuer"
+  },
+  {
+    "title": "Dependent types, weak references,\tand stable names",
+    "author": "Richard Eisenberg"
+  },
+  {
+    "title": "Parsing Haskell with Layout",
+    "author": "J. Garrett Morris"
+  },
+  {
+    "title": "Parsing Haskell with Layout",
+    "author": "Benjamin Redelings"
+  },
+  {
+    "title": "HDBC packages looking for maintainer",
+    "author": "Tobias Dammers"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Olaf Klinke"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Bardur Arantsson"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Bryan Richter"
+  },
+  {
+    "title": "Haskell-Cafe Digest, Vol 180, Issue 32",
+    "author": "Michal J Gajda"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Bardur Arantsson"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Peter Simons"
+  },
+  {
+    "title": "Installing hsdev on windows",
+    "author": "Yotam Ohad"
+  },
+  {
+    "title": "Installing hsdev on windows",
+    "author": "Phyx"
+  },
+  {
+    "title": "Installing hsdev on windows",
+    "author": "Alexis King"
+  },
+  {
+    "title": "Haskell-Cafe Digest, Vol 180, Issue 32",
+    "author": "Ben Franksen"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Ben Franksen"
+  },
+  {
+    "title": "What is the best way to search information on\tHaskell Cafe?",
+    "author": "Rodrigo Stevaux"
+  },
+  {
+    "title": "What is the best way to search information on Haskell Cafe?",
+    "author": "MigMit"
+  },
+  {
+    "title": "What is the best way to search information on Haskell Cafe?",
+    "author": "Brandon Allbery"
+  },
+  {
+    "title": "What is the best way to search information on Haskell Cafe?",
+    "author": "Francesco Ariis"
+  },
+  {
+    "title": "What is the best way to search information on Haskell Cafe?",
+    "author": "Henk-Jan van Tuyl"
+  },
+  {
+    "title": "Testing of GHC extensions & optimizations",
+    "author": "Rodrigo Stevaux"
+  },
+  {
+    "title": "What is the best way to search information on\tHaskell Cafe?",
+    "author": "Amin Bandali"
+  },
+  {
+    "title": "ANN: leancheck-v0.7.2,\tenumerative QuickCheck-like testing",
+    "author": "Rodrigo Stevaux"
+  },
+  {
+    "title": "Alternative instance for non-backtracking parsers",
+    "author": "Mario Blažević"
+  },
+  {
+    "title": "if-then without -else?",
+    "author": "Rodrigo Stevaux"
+  },
+  {
+    "title": "if-then without -else?",
+    "author": "Alexis King"
+  },
+  {
+    "title": "if-then without -else?",
+    "author": "Rodrigo Stevaux"
+  }
+]

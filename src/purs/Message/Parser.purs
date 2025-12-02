@@ -1,5 +1,6 @@
 module Message.Parser
   ( run
+  , run'
   ) where
 
 import Prelude hiding (between)
@@ -43,6 +44,11 @@ run { input, streamIsDone } =
     messages <- many (try (messageP { expectEOF: streamIsDone }))
     Position { index } <- Parsing.position
     pure { remainder: String.drop index input, messages }
+
+run'
+  :: String
+  -> Either ParseError (List Message)
+run' input = Parsing.runParser input (many (messageP { expectEOF: true }))
 
 foreign import parseRFC2822 :: String -> JSDate
 foreign import decodeRFC2047 :: String -> String
@@ -101,7 +107,7 @@ messageIDsP = do
   pure (fold1 (prefix :| rest))
   where
   singleLineRemainder = do
-    many1Till (MessageID.parser <* optional (try skipParentheses) <* many hspace) (string "\n")
+    many1Till (MessageID.parser <* optional (try (string ",")) <* optional (try skipParentheses) <* many hspace) (string "\n")
 
 skipParentheses :: Parser String Unit
 skipParentheses = do

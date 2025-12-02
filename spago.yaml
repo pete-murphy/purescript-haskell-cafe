@@ -13,9 +13,11 @@ package:
     - js-intl
     - js-promise
     - js-promise-aff
+    - node-fs
     - now
     - parsing
     - prelude
+    - simple-json
     - spec
     - string-parsers
     - strings

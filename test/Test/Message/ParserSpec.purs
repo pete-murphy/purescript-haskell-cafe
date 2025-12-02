@@ -4,18 +4,29 @@ import Prelude
 
 import Data.Array as Array
 import Data.Either (Either(..))
+import Data.Foldable (for_)
 import Data.List ((:))
 import Data.List as List
 import Data.Maybe (Maybe(..))
-import Data.String.CodeUnits as String
+import Data.String (Pattern(..))
+import Data.String as String
+import Data.Tuple (Tuple(..))
 import Message.Parser as Message.Parser
 import MessageID (MessageID)
 import MessageID as MessageID
+import Node.Encoding (Encoding(..))
+import Node.FS.Aff as Node.FS.Aff
 import Parsing (ParseError, Position(..), parseErrorMessage, parseErrorPosition)
 import Parsing as Parsing
 import Partial.Unsafe (unsafeCrashWith, unsafePartial)
+import Simple.JSON as SimpleJSON
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual, shouldSatisfy)
+
+spec :: Spec Unit
+spec = do
+  samples
+  actualFiles
 
 -- Example message contents
 example1 :: String
@@ -223,6 +234,116 @@ which may do the desired manipulation on the string and may also perform
 some more input/output and should produce a result of type a.
 """
 
+example_aug2018_1 :: String
+example_aug2018_1 =
+  """From stefan.chacko at hotmail.de  Wed Aug 15 21:06:40 2018
+From: stefan.chacko at hotmail.de (Stefan Chacko)
+Date: Wed, 15 Aug 2018 21:06:40 +0000
+Subject: [Haskell-cafe] WG:
+In-Reply-To: <VI1PR01MB4047A1F2F885042AA9D508E3873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+References: <VI1PR01MB4047B7B1219257EBD3120440873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>,
+ <VI1PR01MB4047A1F2F885042AA9D508E3873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+Message-ID: <VI1PR01MB40478FF8957DB78BF79BB7D1873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+
+
+Dear Haskell supporters,
+I have a some question about the definitions in haskell.
+
+  1.  What is the use of making definitions compared to having no definitions? Is it just like a comment for documation or does it really make a difference in compiling the code?
+  2.  What does the arrow(->) mean in such a definition? Is it a binary operation as *, +, -, <,>,=   or is it something else? For example there is
+
+sumWithL :: [Int] -> Int -> Int
+
+Does this mean in other words [Int]+Int=Int
+
+  1.  Why do we use clinches in such definitions. I concluded  you need clinches if a function is not associative
+
+such as (a-b)+c  . (Int->Int)->Int->Int
+
+But also if a higher order function needs more than one argument. (a->b)->c .
+
+Can you please explain it ?
+
+
+
+Thank you
+
+
+
+Kind regards.
+
+Gesendet von Mail<https://go.microsoft.com/fwlink/?LinkId=550986> für Windows 10
+
+
+
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <http://mail.haskell.org/pipermail/haskell-cafe/attachments/20180815/4102afaa/attachment.html>
+
+From fa-ml at ariis.it  Wed Aug 15 21:27:29 2018
+From: fa-ml at ariis.it (Francesco Ariis)
+Date: Wed, 15 Aug 2018 23:27:29 +0200
+Subject: [Haskell-cafe] WG:
+In-Reply-To: <VI1PR01MB40478FF8957DB78BF79BB7D1873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+References: <VI1PR01MB4047B7B1219257EBD3120440873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+ <VI1PR01MB4047A1F2F885042AA9D508E3873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+ <VI1PR01MB40478FF8957DB78BF79BB7D1873F0@VI1PR01MB4047.eurprd01.prod.exchangelabs.com>
+Message-ID: <20180815212729.e2b36ylplg232lgz@x60s.casa>
+
+Hello Steafan,
+
+On Wed, Aug 15, 2018 at 09:06:40PM +0000, Stefan Chacko wrote:
+>   1.  What is the use of making definitions compared to having no
+> definitions? Is it just like a comment for documation or does it really
+> make a difference in compiling the code?
+
+Writing signatures is always useful:
+
+    - to prototype (and let the compiler complain about wrong types)
+    - to restrict a function to some types only, e.g.
+
+        intHead :: [Int] -> Int
+        intHead is = head is
+
+    - to have an immediate, clear, verifiable documentation near the
+      functions
+
+
+>   2.  What does the arrow(->) mean in such a definition? [...]
+> For example there is sumWithL :: [Int] -> Int -> Int
+
+`[Int] -> Int -> Int` can be (with great approximation) be read
+"this function takes two arguments, `[Int]` and `Int`, to return
+an `Int`.
+More precisely, if you provide `[Int]` you'll get back a function
+that takes an Int to return one Int (Int -> Int), and if you
+(finally) pass an Int to that, you receive the final result.
+
+>   1.  Why do we use clinches in such definitions. I concluded
+> you need clinches if a function is not associative
+
+(->) (called `function application`) associates to the right, so
+
+    sumWithL :: [Int] -> Int -> Int
+
+is equal to
+
+    sumWithL :: [Int] -> (Int -> Int)
+
+If you want a function that takes a function `[Int] -> Int` to return
+an Int you got to put parentheses:
+
+    sumWithL :: ([Int] -> Int) -> Int
+
+Hope it was clear!
+-F
+
+p.s. haskell at haskell.org is for announcements only, so I am removing it
+from cc.
+
+
+"""
+
 -- Helper function to parse a MessageID from a string (with angle brackets)
 parseMessageID :: String -> MessageID
 parseMessageID str =
@@ -235,17 +356,18 @@ formatParseError :: String -> ParseError -> String
 formatParseError input err =
   let
     msg = parseErrorMessage err
-    Position { index } = parseErrorPosition err
-    contextStart = max 0 (index - 40)
-    contextEnd = min (String.length input) (index + 40)
-    start = String.slice contextStart index input
-    end = String.slice index contextEnd input
-    context = start <> "|" <> end
+    Position { line, column } = parseErrorPosition err
+    lines = input # String.split (Pattern "\n")
   in
-    "Parse error: " <> msg <> " at position " <> show index <> "\nContext: " <> context
+    [ "[Parse error]:"
+    , msg
+    , ""
+    , lines # Array.slice (max 0 (line - 2)) line # String.joinWith "\n"
+    , Array.replicate (column - 1) " " # String.joinWith "" # (_ <> "^")
+    ] # String.joinWith "\n"
 
-spec :: Spec Unit
-spec = do
+samples :: Spec Unit
+samples = do
   describe "Message.Parser" do
     describe "example 1" do
       describe "streamIsDone: true" do
@@ -787,3 +909,29 @@ spec = do
           case Message.Parser.run { input: concatenated, streamIsDone: false } of
             Right { remainder } -> remainder `shouldEqual` example3
             Left err -> fail (formatParseError concatenated err)
+
+    describe "August 2018 example" do
+      it "parses header with comma separator" do
+        let input = example_aug2018_1
+        case Message.Parser.run' input of
+          Right messages -> List.length messages `shouldEqual` 2
+          Left err -> fail (formatParseError input err)
+
+actualFiles :: Spec Unit
+actualFiles = do
+  describe "actual files" do
+    it "parses successfully" do
+      file <- Node.FS.Aff.readTextFile UTF8 "./test/Test/Message/2018-August.txt"
+      metadata <- Node.FS.Aff.readTextFile UTF8 "./test/Test/Message/2018-August.metadata.json"
+
+      let
+        parsedMetadata = case SimpleJSON.readJSON_ metadata of
+          Just (json :: Array { title :: String, author :: String }) -> json
+          Nothing -> unsafeCrashWith "Bad metadata file"
+
+      case Message.Parser.run { input: file, streamIsDone: true } of
+        Right { messages } -> do
+          for_ (Array.zip (Array.fromFoldable messages) parsedMetadata) \(Tuple message metadatum) -> do
+            when (message.author /= metadatum.author) do
+              fail ("Author mismatch: " <> message.author <> " SHOULD BE " <> metadatum.author <> "\n for message: " <> message.subject)
+        Left err -> fail (formatParseError file err)
