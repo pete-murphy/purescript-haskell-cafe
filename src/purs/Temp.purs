@@ -1,10 +1,18 @@
+-- | Async Pipeline Demo: File Download → Message Streaming → Batch Insertion
+-- |
+-- | This module demonstrates an async pipeline using AVars for coordination:
+-- | 1. Download files with N concurrent downloads
+-- | 2. Stream each file into chunks ("messages")
+-- | 3. Batch messages from various files and insert into DB
 module Temp where
 
 import Prelude
 
 import Control.Lazy as Lazy
 import Data.Array as Array
-import Data.Foldable as Foldable
+import Data.DateTime.Instant (Instant)
+import Data.DateTime.Instant as Instant
+import Data.Int as Math
 import Data.List (List(..), (:))
 import Data.List as List
 import Data.Maybe (Maybe(..))
@@ -15,92 +23,151 @@ import Effect.Aff as Aff
 import Effect.Aff.AVar as AVar
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Now as Now
+import Effect.Now as Now
 import Effect.Ref as Ref
-import JS.Intl.DateTimeFormat as Intl.DateTimeFormat
+import Effect.Unsafe as Effect
 import TryPureScript (code, p, render, text)
 
-smallDelay :: Aff Unit
-smallDelay = Aff.delay (200.0 # Milliseconds)
-
+-- | Main pipeline orchestrator
+-- |
+-- | Coordinates three stages:
+-- | 1. File producers: Enqueue files to download
+-- | 2. Download workers: Download files and stream messages
+-- | 3. Batch processor: Collect messages and insert in batches
 main :: Effect Unit
-main = Aff.launchAff_ do
-  Aff.supervise do
-    log "[MAIN] Starting"
-    smallDelay
+main = (Aff.launchAff_ <<< Aff.supervise) do
+  log "MAIN: Pipeline starting"
 
-    let numberOfFiles = 11
-    downloadQueue <- AVar.empty
-    for_ (Array.range 1 numberOfFiles) \i -> Aff.forkAff do
-      smallDelay
-      log ("[DOWNLOAD FILE FIBER " <> show i <> "] Putting " <> ("file-" <> show i) <> " into downloadQueue")
-      AVar.put (Just ("file-" <> show i)) downloadQueue
+  -- ============================================================================
+  -- Stage 1: File Download Queue Setup
+  -- ============================================================================
+  -- Create a queue for files to be downloaded
+  let numberOfFiles = 11
+  downloadQueue <- AVar.empty
 
-    let concurrency = 3
-    for_ (Array.range 1 concurrency) \i -> Aff.forkAff do
-      smallDelay
-      log ("[DOWNLOAD DONE FIBER " <> show i <> "] Putting Nothing into downloadQueue to signal done")
-      AVar.put Nothing downloadQueue
+  -- Fork fibers that enqueue files to download
+  -- Each fiber represents a file that needs to be downloaded
+  for_ (Array.range 1 numberOfFiles) \i -> do
+    let filename = "file-" <> show i
+    log ("FILE_PRODUCER[" <> show i <> "]: Enqueuing file → " <> filename)
+    Aff.forkAff (AVar.put (Just filename) downloadQueue)
 
-    messageQueue <- AVar.empty
+  -- Fork fibers that signal completion (one per concurrent worker)
+  -- These send Nothing to indicate no more files will be added
+  let concurrency = 3
+  for_ (Array.range 1 concurrency) \i -> do
+    log ("FILE_PRODUCER[DONE-" <> show i <> "]: Sending completion signal")
+    Aff.forkAff (AVar.put Nothing downloadQueue)
 
-    downloadWorkerFibers <- for (Array.range 1 concurrency) \i -> Aff.forkAff do
-      Lazy.fix \loop -> do
-        maybeFilename <- AVar.take downloadQueue
-        case maybeFilename of
-          Just filename -> do
-            log ("[WORKER FIBER " <> show i <> "] Receiving " <> filename)
-            let numberOfMessagesPerFile = 6
-            for_ (Array.range 1 numberOfMessagesPerFile) \j -> do
-              smallDelay -- Download streaming response of messages
-              log ("[WORKER FIBER " <> show i <> "] Putting " <> ("message-" <> filename <> "-" <> show j) <> " into messageQueue")
-              AVar.put (Just ("message-" <> filename <> "-" <> show j)) messageQueue
-            loop
+  -- ============================================================================
+  -- Stage 2: Message Queue Setup
+  -- ============================================================================
+  -- Create a queue for messages (chunks) streamed from downloaded files
+  messageQueue <- AVar.empty
 
-          Nothing -> do
-            -- Done
+  -- ============================================================================
+  -- Stage 3: Download Workers (Concurrent File Processing)
+  -- ============================================================================
+  -- Fork N concurrent workers that:
+  -- - Take files from downloadQueue
+  -- - Download and stream each file into messages
+  -- - Enqueue messages into messageQueue
+  downloadWorkerFibers <- for (Array.range 1 concurrency) \workerId -> Aff.forkAff do
+    Lazy.fix \loop -> do
+      maybeFilename <- AVar.take downloadQueue
+      case maybeFilename of
+        Just filename -> do
+          log ("DOWNLOAD_WORKER[" <> show workerId <> "]: Processing file → " <> filename)
+
+          -- Stream messages from this file
+          let numberOfMessagesPerFile = 6
+          for_ (Array.range 1 numberOfMessagesPerFile) \msgNum -> do
+            let messageId = "message-" <> filename <> "-" <> show msgNum
+            log ("DOWNLOAD_WORKER[" <> show workerId <> "]: Streaming message[" <> show msgNum <> "/" <> show numberOfMessagesPerFile <> "] → " <> messageId)
+            Aff.delay (100.0 # Milliseconds)
+            Aff.forkAff (AVar.put (Just messageId) messageQueue)
+          loop
+
+        Nothing -> do
+          log ("DOWNLOAD_WORKER[" <> show workerId <> "]: Received completion signal, shutting down")
+          pure unit
+
+  -- ============================================================================
+  -- Stage 4: Batch Message Processor
+  -- ============================================================================
+  -- Collects messages and inserts them in batches when batchSize is reached
+  let batchSize = 10
+
+  batchMessagesFiber <- Aff.forkAff do
+    messagesRef <- liftEffect (Ref.new Nil)
+    batchNumRef <- liftEffect (Ref.new 0)
+
+    Lazy.fix \loop -> do
+      maybeMessage <- AVar.take messageQueue
+      case maybeMessage of
+        Just message -> do
+          -- Add message to accumulator
+          messages <- liftEffect (Ref.modify (message : _) messagesRef)
+          let currentCount = List.length messages
+          log ("BATCH_PROCESSOR: Received message, accumulator size = " <> show currentCount)
+
+          -- When we have enough messages, process a batch
+          when (currentCount >= batchSize) do
+            batchNum <- liftEffect (Ref.modify (_ + 1) batchNumRef)
+            batch <- List.take batchSize <$> liftEffect (Ref.read messagesRef)
+            remaining <- liftEffect (Ref.modify (List.drop batchSize) messagesRef)
+            log ("BATCH_PROCESSOR: Batch[" <> show batchNum <> "] INSERTING " <> show (List.length batch) <> " messages → " <> show batch)
+            log ("BATCH_PROCESSOR: Remaining in accumulator: " <> show (List.length remaining))
+            Aff.delay (1200.0 # Milliseconds)
+          loop
+
+        Nothing -> do
+          log ("BATCH_PROCESSOR: Received completion signal, processing final batches")
+          -- Process any remaining messages in batches
+          Lazy.fix \innerLoop -> do
+            allMessages <- liftEffect (Ref.read messagesRef)
+            let remainingCount = List.length allMessages
+
+            when (remainingCount > 0) do
+              batchNum <- liftEffect (Ref.modify (_ + 1) batchNumRef)
+              let batch = List.take batchSize allMessages
+              let remaining = List.drop batchSize allMessages
+              liftEffect (Ref.write remaining messagesRef)
+              log ("BATCH_PROCESSOR: Final Batch[" <> show batchNum <> "] INSERTING " <> show (List.length batch) <> " messages → " <> show batch)
+              log ("BATCH_PROCESSOR: Remaining after batch: " <> show (List.length remaining))
+              Aff.delay (1200.0 # Milliseconds)
+
+              when (List.length remaining > 0) do
+                innerLoop
             pure unit
 
-    let batchSize = 10
+  -- ============================================================================
+  -- Cleanup: Wait for workers and signal completion
+  -- ============================================================================
+  log "MAIN: Waiting for all download workers to complete"
+  for_ downloadWorkerFibers Aff.joinFiber
 
-    batchMessagesFiber <- Aff.forkAff do
-      messagesRef <- liftEffect (Ref.new Nil)
-      Lazy.fix \loop -> do
-        smallDelay
-        maybeMessage <- AVar.take messageQueue
-        case maybeMessage of
-          Just message -> do
-            messages <- liftEffect (Ref.modify (message : _) messagesRef)
-            when (Foldable.length messages >= batchSize) do
-              batch <- List.take batchSize <$> liftEffect (Ref.read messagesRef)
-              liftEffect (Ref.write (List.drop batchSize messages) messagesRef)
-              log ("[BATCH] Inserting batch of messages: " <> show batch)
-            loop
+  log "MAIN: All download workers finished, signaling message queue completion"
+  AVar.put Nothing messageQueue
 
-          Nothing -> do
-            log ("[BATCH] Inserting final batch of messages")
-            Lazy.fix \innerLoop -> do
-              smallDelay
-              batch <- List.take batchSize <$> liftEffect (Ref.read messagesRef)
-              remaining <- liftEffect (Ref.modify (List.drop batchSize) messagesRef)
-              log ("[BATCH] Inserting batch of messages: " <> show batch)
+  log "MAIN: Waiting for batch processor to finish"
+  Aff.joinFiber batchMessagesFiber
+  log "MAIN: Pipeline complete"
 
-              when (Foldable.length remaining > 0) do
-                -- TODO: Shouldn't happen?
-                log ("[BATCH] Looping again, with remaining messages: " <> show remaining)
-                innerLoop
-
-    log "[MAIN] Waiting for download workers to finish"
-    for_ downloadWorkerFibers Aff.joinFiber
-
-    log "[MAIN] Putting Nothing into messageQueue to signal done"
-    AVar.put Nothing messageQueue
-
-    Aff.joinFiber batchMessagesFiber
-
+-- | Log a message with timestamp for debugging and tracing pipeline execution
+-- |
+-- | Messages are prefixed with component labels (e.g., "MAIN:", "DOWNLOAD_WORKER[1]:")
+-- | to make it easy to correlate logs back to their source code locations.
 log :: forall m. MonadEffect m => String -> m Unit
 log message = do
-  now <- liftEffect do
-    Intl.DateTimeFormat.format <$> Intl.DateTimeFormat.new [] { timeStyle: "long" } <*> Now.nowDateTime
-  let html = p (code (text now) <> text " - " <> text message)
+  Milliseconds millis <- liftEffect do
+    Instant.unInstant <$> Now.now
+  let
+    diff = Math.floor (millis - start)
+    html = p (code (text (show diff <> "ms")) <> text " - " <> text message)
   liftEffect (render html)
 
+start :: Number
+start = Effect.unsafePerformEffect do
+  Milliseconds now <- Instant.unInstant <$> Now.now
+  pure (now)
