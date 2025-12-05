@@ -10,22 +10,20 @@ import Prelude
 
 import Control.Lazy as Lazy
 import Data.Array as Array
-import Data.DateTime.Instant (Instant)
 import Data.DateTime.Instant as Instant
-import Data.Int as Math
+import Data.Int as Int
 import Data.List (List(..), (:))
 import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Traversable (for, for_)
 import Effect (Effect)
-import Effect.Aff (Aff, Milliseconds(..))
+import Effect.Aff (Milliseconds(..))
 import Effect.Aff as Aff
 import Effect.Aff.AVar as AVar
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Now as Now
-import Effect.Now as Now
 import Effect.Ref as Ref
-import Effect.Unsafe as Effect
+import Effect.Unsafe as Effect.Unsafe
 import TryPureScript (code, p, render, text)
 
 -- | Main pipeline orchestrator
@@ -42,7 +40,7 @@ main = (Aff.launchAff_ <<< Aff.supervise) do
   -- Stage 1: File Download Queue Setup
   -- ============================================================================
   -- Create a queue for files to be downloaded
-  let numberOfFiles = 11
+  let numberOfFiles = 4
   downloadQueue <- AVar.empty
 
   -- Fork fibers that enqueue files to download
@@ -109,12 +107,12 @@ main = (Aff.launchAff_ <<< Aff.supervise) do
           -- Add message to accumulator
           messages <- liftEffect (Ref.modify (message : _) messagesRef)
           let currentCount = List.length messages
-          log ("BATCH_PROCESSOR: Received message, accumulator size = " <> show currentCount)
+          log ("BATCH_PROCESSOR: Received message " <> show message <> ", accumulator size = " <> show currentCount)
 
           -- When we have enough messages, process a batch
           when (currentCount >= batchSize) do
             batchNum <- liftEffect (Ref.modify (_ + 1) batchNumRef)
-            batch <- List.take batchSize <$> liftEffect (Ref.read messagesRef)
+            batch <- (List.reverse <<< List.take batchSize) <$> liftEffect (Ref.read messagesRef)
             remaining <- liftEffect (Ref.modify (List.drop batchSize) messagesRef)
             log ("BATCH_PROCESSOR: Batch[" <> show batchNum <> "] INSERTING " <> show (List.length batch) <> " messages → " <> show batch)
             log ("BATCH_PROCESSOR: Remaining in accumulator: " <> show (List.length remaining))
@@ -130,7 +128,7 @@ main = (Aff.launchAff_ <<< Aff.supervise) do
 
             when (remainingCount > 0) do
               batchNum <- liftEffect (Ref.modify (_ + 1) batchNumRef)
-              let batch = List.take batchSize allMessages
+              let batch = List.reverse (List.take batchSize allMessages)
               let remaining = List.drop batchSize allMessages
               liftEffect (Ref.write remaining messagesRef)
               log ("BATCH_PROCESSOR: Final Batch[" <> show batchNum <> "] INSERTING " <> show (List.length batch) <> " messages → " <> show batch)
@@ -163,11 +161,11 @@ log message = do
   Milliseconds millis <- liftEffect do
     Instant.unInstant <$> Now.now
   let
-    diff = Math.floor (millis - start)
-    html = p (code (text (show diff <> "ms")) <> text " - " <> text message)
+    diff = Int.floor (millis - start)
+    html = p (code (text (show diff <> "ms - " <> message)))
   liftEffect (render html)
 
 start :: Number
-start = Effect.unsafePerformEffect do
+start = Effect.Unsafe.unsafePerformEffect do
   Milliseconds now <- Instant.unInstant <$> Now.now
   pure (now)
