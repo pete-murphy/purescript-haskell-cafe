@@ -21,7 +21,7 @@
 
 :root {
   --c: 0.6;
-  --color-hue: 280;
+  --color-hue: 220;
 
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-family: "SF Mono", monospace;
@@ -82,15 +82,15 @@ body {
 }
 
 .container {
-  padding: 2rem;
+  /* padding: 2rem; */
 }
 
 .message {
-  margin-bottom: 3rem;
+  /* margin-bottom: 3rem; */
 }
 
 .message-header {
-  margin-bottom: 1rem;
+  /* margin-bottom: 1rem; */
   color: var(--color-2);
 }
 
@@ -98,13 +98,16 @@ body {
   color: var(--color-2);
   font-weight: 900;
   font-size: 1.5rem;
+  font-size: 1rem;
   margin-bottom: 0.5rem;
+  margin-bottom: 0rem;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   /* font-family: "New York", serif; */
 }
 
 .message-meta {
   font-size: 13px;
+  font-size: 0.5rem;
   /* font-family: system-ui, Avenir, Helvetica, Arial, sans-serif; */
   /* font-family: "New York", serif; */
   color: var(--color-7);
@@ -130,5 +133,5 @@ body {
 
 .message-separator {
   border-top: 1px solid var(--color-12);
-  margin: 3rem 0;
+  /* margin: 3rem 0; */
 }

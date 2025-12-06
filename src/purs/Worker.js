@@ -30,8 +30,13 @@ export function createSchema(pglite) {
     `);
 }
 
-export function insertMessages(pglite) {
-  return (rows) => {
+let count = 0;
+
+export function insertMessages({ pglite, rows }) {
+  return (affError, affSuccess) => {
+    if (rows.length === 0) {
+      return affSuccess({ rows: [], rowsAffected: 0 });
+    }
     const fields = [
       "id",
       "subject",
@@ -79,15 +84,23 @@ export function insertMessages(pglite) {
         in_reply_to.concat(id).join("."),
       ];
     });
-
-    const query = `
-      INSERT INTO messages 
+    const k = count++;
+    const rowsLength = rows.length;
+    const query = `INSERT INTO messages 
         (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} 
-        ON CONFLICT DO NOTHING;
-    `;
+        ON CONFLICT DO NOTHING;`;
 
-    return () => {
-      return pglite.query(query, flattened);
+    const label = `INSERTING ${k} (${rowsLength} rows)`;
+    console.time(label);
+    pglite
+      .query(query, flattened)
+      .then(affSuccess)
+      .catch(affError)
+      .finally(() => console.timeEnd(label));
+
+    return (_cancelError, _onCancelerError, onCancelerSuccess) => {
+      // TODO: Handle cancellation?
+      onCancelerSuccess();
     };
   };
 }

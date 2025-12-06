@@ -1,28 +1,18 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { live } from "@electric-sql/pglite/live";
 
-export function worker() {
-  return new Worker(new URL("../../src/worker.ts", import.meta.url), {
-    type: "module",
-  });
-}
+// function worker() {
+const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
+  type: "module",
+});
 
-export function onMessages(worker) {
-  return (callback) => {
-    return () =>
-      (worker.onmessage = (event) => {
-        if (event.data.type === "fetch") {
-          document.body.appendChild(document.createElement("h1")).textContent =
-            event.data.message;
-        } else callback(event.data.message)();
-      });
+export function awaitWorkerReady(affError, affSuccess) {
+  worker.onmessage = (ev) => {
+    ev.data == "pong" ? affSuccess() : affError();
   };
-}
-
-export function addToDOM(message) {
-  return () => {
-    document.body.appendChild(document.createElement("pre")).textContent =
-      message;
+  worker.postMessage("ping");
+  return (_cancelError, _onCancelerError, onCancelerSuccess) => {
+    onCancelerSuccess();
   };
 }
 
@@ -60,6 +50,13 @@ function renderMessages(res, appElement) {
       .replace(/>/g, "&gt;");
   };
 
+  // <div class="message-content">${escapeHtml(row.content || "")}</div>
+
+  // ${
+  //   row.refs && row.refs.length > 0
+  //     ? `<div class="message-footer">References: ${row.refs.map((ref) => escapeHtml(ref)).join(", ")}</div>`
+  //     : ""
+  // }
   const html = `
     <div class="container">
       ${
@@ -78,14 +75,7 @@ function renderMessages(res, appElement) {
             ${row.in_reply_to.length > 0 ? `<div class="message-meta">In-Reply-To: ${row.in_reply_to.map((ref) => escapeHtml(ref)).join(", ")}</div>` : ""}
             ${row.month_file ? `<div class="message-meta">File: ${escapeHtml(row.month_file)}</div>` : ""}
           </div>
-          
-          <div class="message-content">${escapeHtml(row.content || "")}</div>
-          
-          ${
-            row.refs && row.refs.length > 0
-              ? `<div class="message-footer">References: ${row.refs.map((ref) => escapeHtml(ref)).join(", ")}</div>`
-              : ""
-          }
+
         </div>
         ${index < rows.length - 1 ? '<div class="message-separator"></div>' : ""}`
               )
@@ -97,19 +87,42 @@ function renderMessages(res, appElement) {
   appElement.innerHTML = html;
 }
 
-async function main() {
+export function liveQuery(pglite) {
   const app = document.getElementById("app");
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  const pglite = await newPGlite();
+  // Ensure schema (TODO: move this to a shared file, it is duplicated in Worker.js)
+  pglite.exec(`
+    CREATE EXTENSION IF NOT EXISTS ltree;
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      subject TEXT,
+      author TEXT,
+      date TIMESTAMPTZ,
+      in_reply_to TEXT[],
+      refs TEXT[],
+      content TEXT,
+      month_file TEXT,
+      path LTREE NOT NULL,
+      search TSVECTOR NOT NULL
+    );
+  `);
   pglite.live.query({
-    query: "SELECT * FROM messages ORDER BY date DESC;",
+    query: "SELECT * FROM messages ORDER BY date ASC;",
     offset: 0,
     limit: 100,
     callback: (res) => {
-      console.log("res", res);
+      console.log(performance.now(), "[PGlite] live query callback", res);
       renderMessages(res, app);
     },
   });
+  pglite.live.query({
+    query: "SELECT COUNT(*) FROM messages;",
+    callback: (res) => {
+      console.log(
+        performance.now(),
+        "[PGlite] live query callback, count of rows",
+        res.rows.at(0)?.count
+      );
+    },
+  });
 }
-
-main();

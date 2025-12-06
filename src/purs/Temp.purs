@@ -94,13 +94,15 @@ main = (Aff.launchAff_ <<< Aff.supervise) do
   -- Stage 4: Batch Message Processor
   -- ============================================================================
   -- Collects messages and inserts them in batches when batchSize is reached
-  let batchSize = 10
+  let batchSize = 100
 
   batchMessagesFiber <- Aff.forkAff do
+    log "[BATCH]"
     messagesRef <- liftEffect (Ref.new Nil)
     batchNumRef <- liftEffect (Ref.new 0)
 
     Lazy.fix \loop -> do
+      log "[BATCH > LOOP]"
       maybeMessage <- AVar.take messageQueue
       case maybeMessage of
         Just message -> do
