@@ -5,8 +5,26 @@ const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
   type: "module",
 });
 
+const FORWARD_CHANNEL = "db-forward";
+
+let pglitePromise;
+
+async function ensurePGlite() {
+  if (!pglitePromise) {
+    pglitePromise = newPGlite();
+  }
+  return pglitePromise;
+}
+
 worker.onmessage = (d) => {
-  if (d.data !== "DB_READY");
+  const data = d.data;
+
+  if (data && data.channel === FORWARD_CHANNEL) {
+    handleDbForward(data);
+    return;
+  }
+
+  if (data !== "DB_READY") return;
   const button = document.createElement("button");
   button.innerHTML = "Click to start fetching text files";
   button.onclick = () => worker.postMessage("go");
@@ -25,6 +43,112 @@ export async function newPGlite() {
   });
   await pglite.waitReady;
   return pglite;
+}
+
+function buildInsertQuery(rows) {
+  const fields = [
+    "id",
+    "subject",
+    "author",
+    "date",
+    "in_reply_to",
+    "refs",
+    "content",
+    "month_file",
+    "path",
+  ];
+
+  const placeholders = rows.map(
+    (_, i) =>
+      `(${fields
+        .map((_, j) => `$${fields.length * i + j + 1}`)
+        .concat(
+          `to_tsvector('english', $${i * fields.length + 2} || ' ' || $${i * fields.length + 3} || ' ' || $${i * fields.length + 7})`
+        )
+        .join(", ")})`
+  );
+
+  const flattened = rows.flatMap(
+    ({ id, subject, author, date, in_reply_to, refs, content, month_file }) => [
+      id,
+      subject,
+      author,
+      date,
+      in_reply_to,
+      refs,
+      content,
+      month_file,
+      in_reply_to.concat(id).join("."),
+    ]
+  );
+
+  const query = `INSERT INTO messages 
+      (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} 
+      ON CONFLICT DO NOTHING;`;
+
+  return { query, params: flattened };
+}
+
+async function handleDbForward(message) {
+  const { id, op, payload } = message;
+  const respond = (body) =>
+    worker.postMessage({ channel: FORWARD_CHANNEL, id, ...body });
+
+  try {
+    const pglite = await ensurePGlite();
+
+    switch (op) {
+      case "init": {
+        respond({ ok: true, result: { ready: true } });
+        return;
+      }
+      case "exec": {
+        await pglite.exec(payload?.sql ?? "");
+        respond({ ok: true, result: null });
+        return;
+      }
+      case "query": {
+        const res = await pglite.query(
+          payload?.sql ?? "",
+          payload?.params ?? []
+        );
+        respond({ ok: true, result: res });
+        return;
+      }
+      case "insertMessages": {
+        const rows = payload?.rows ?? [];
+        if (!rows.length) {
+          respond({ ok: true, result: { rowsAffected: 0 } });
+          return;
+        }
+        const label = `[forward insert] ${rows.length} rows`;
+        console.time(label);
+        const { query, params } = buildInsertQuery(rows);
+        const res = await pglite.query(query, params);
+        console.timeEnd(label);
+        respond({
+          ok: true,
+          result: { rowsAffected: res?.rowCount ?? rows.length },
+        });
+        return;
+      }
+      case "reset": {
+        await pglite.exec("DELETE FROM messages;");
+        respond({ ok: true, result: null });
+        return;
+      }
+      default:
+        throw new Error(`Unknown forward op: ${op}`);
+    }
+  } catch (error) {
+    respond({
+      ok: false,
+      error: {
+        message: error?.message || "forwarding error",
+        stack: error?.stack,
+      },
+    });
+  }
 }
 
 function renderMessages(res, appElement) {
@@ -47,13 +171,6 @@ function renderMessages(res, appElement) {
       .replace(/>/g, "&gt;");
   };
 
-  // <div class="message-content">${escapeHtml(row.content || "")}</div>
-
-  // ${
-  //   row.refs && row.refs.length > 0
-  //     ? `<div class="message-footer">References: ${row.refs.map((ref) => escapeHtml(ref)).join(", ")}</div>`
-  //     : ""
-  // }
   const html = `
     <div class="container">
       ${
@@ -85,6 +202,7 @@ function renderMessages(res, appElement) {
 }
 
 export function liveQuery(pglite) {
+  console.log("[liveQuery] Starting live query");
   const app = document.getElementById("app");
   // Ensure schema (TODO: move this to a shared file, it is duplicated in Worker.js)
   pglite.exec(`
@@ -105,12 +223,14 @@ export function liveQuery(pglite) {
   `);
 
   pglite.live.query({
-    query: "SELECT * FROM messages ORDER BY date ASC;",
+    query:
+      "SELECT * FROM messages WHERE search @@ websearch_to_tsquery('english', 'thread') ORDER BY date ASC;",
+    // query: "SELECT * FROM messages ORDER BY date ASC;",
     offset: 0,
     limit: 100,
     callback: (res) => {
       console.log(
-        performance.now(),
+        humanReadableTimestamp(),
         "[PGlite] live query callback",
         res.rows.length
       );
@@ -121,10 +241,16 @@ export function liveQuery(pglite) {
     query: "SELECT COUNT(*) FROM messages;",
     callback: (res) => {
       console.log(
-        performance.now(),
+        humanReadableTimestamp(),
         "[PGlite] live query callback, count of rows",
         res.rows.at(0)?.count
       );
     },
   });
+}
+
+function humanReadableTimestamp() {
+  const now = Math.floor(performance.now());
+  const seconds = now / 1_000;
+  return seconds.toPrecision(3);
 }
