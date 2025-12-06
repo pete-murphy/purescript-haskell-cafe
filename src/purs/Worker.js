@@ -1,5 +1,9 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 
+export function consoleCount(label) {
+  console.count(label);
+}
+
 export async function newPGlite() {
   const dbWorker = new Worker(
     new URL("../../src/pglite-worker.js", import.meta.url),
@@ -37,6 +41,7 @@ export function insertMessages({ pglite, rows }) {
     if (rows.length === 0) {
       return affSuccess({ rows: [], rowsAffected: 0 });
     }
+
     const fields = [
       "id",
       "subject",
@@ -90,8 +95,9 @@ export function insertMessages({ pglite, rows }) {
         (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} 
         ON CONFLICT DO NOTHING;`;
 
-    const label = `INSERTING ${k} (${rowsLength} rows)`;
+    const label = `[insertMessages] Inserting ${k} (${rowsLength} rows)`;
     console.time(label);
+
     pglite
       .query(query, flattened)
       .then(affSuccess)
@@ -109,10 +115,10 @@ export function queryMessages(pglite) {
   return () => pglite.query(`SELECT * FROM messages;`);
 }
 
-export function fetchStreamImpl({ filename, onChunk }) {
+export function fetchText({ filename, onChunk }) {
   return (affError, affSuccess) => {
     const controller = new AbortController();
-    fetchStream(filename, onChunk).then(affSuccess).catch(affError);
+    fetchTextHelper(filename, onChunk).then(affSuccess).catch(affError);
     return (error, _cancelError, cancelSuccess) => {
       controller.abort(error);
       cancelSuccess();
@@ -120,9 +126,9 @@ export function fetchStreamImpl({ filename, onChunk }) {
   };
 }
 
-async function fetchStream(filename, onChunk) {
-  console.count("fetchStream");
-  console.log(`[fetchStream] fetching ${filename}`);
+async function fetchTextHelper(filename, onChunk) {
+  console.count("fetchText");
+  console.log(`[fetchText] fetching ${filename}`);
   const res = await fetch(`/haskell-cafe/${filename}`);
   const decoded = (
     filename.endsWith(".gz")

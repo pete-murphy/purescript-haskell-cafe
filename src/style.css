@@ -20,8 +20,8 @@
 }
 
 :root {
-  --c: 0.6;
-  --color-hue: 220;
+  --c: 0;
+  --color-hue: 280;
 
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-family: "SF Mono", monospace;

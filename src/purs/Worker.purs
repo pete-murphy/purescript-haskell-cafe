@@ -6,7 +6,6 @@ import Control.Lazy as Lazy
 import Data.Array as Array
 import Data.DateTime.Instant as Instant
 import Data.Either (Either(..))
-import Data.Foldable as Foldable
 import Data.JSDate as JSDate
 import Data.List (List(..), (:))
 import Data.List as List
@@ -32,12 +31,11 @@ import Effect.Unsafe as Effect.Unsafe
 import Message (Message)
 import Message.Parser as Message.Parser
 import MessageID as MessageID
-import Node.Buffer.Class as Buffer
 import Parsing (ParseError, Position(..), parseErrorMessage, parseErrorPosition)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
 
-foreign import fetchStreamImpl
+foreign import fetchText
   :: { filename :: String
      , onChunk :: Nullable String -> Effect Unit
      }
@@ -52,8 +50,8 @@ foreign import insertMessages
   -> EffectFnAff Unit
 
 foreign import postMessage :: EffectFn1 String Unit
-
 foreign import setupListener :: EffectFn1 (Effect Unit) Unit
+foreign import consoleCount :: EffectFn1 String Unit
 
 log :: forall m. MonadEffect m => String -> m Unit
 log message = do
@@ -73,7 +71,7 @@ main = Aff.launchAff_ do
   Promise.Aff.toAffE (createSchema pglite)
   log "Created schema"
   liftEffect (runEffectFn1 setupListener (handleMessage pglite))
-  liftEffect (runEffectFn1 postMessage "shit")
+  liftEffect (runEffectFn1 postMessage "DB_READY")
 
 handleMessage :: PGlite -> Effect Unit
 handleMessage pglite = do
@@ -93,7 +91,7 @@ handleMessage pglite = do
     --   Array.take 2 (Array.drop 80 filenames) -- Two files starting at 80
     --   Array.take 5 (Array.drop 80 filenames) -- Five files starting at 80 (original)
     -- let testFiles = Array.take 80 (Array.drop 8 filenames)
-    let testFiles = Array.take 4 $ Array.drop 200 filenames
+    let testFiles = Array.take 20 (Array.drop 100 filenames)
     log ("Testing with " <> show (Array.length testFiles) <> " file(s): " <> String.joinWith ", " testFiles)
     for_ testFiles \filename -> do
       Aff.forkAff (AVar.put (Just filename) downloadQueue)
@@ -113,31 +111,24 @@ handleMessage pglite = do
     downloadFibers <- for (Array.range 1 downloadConcurrency) \_ -> Aff.forkAff do
       bufferRef <- liftEffect (Ref.new "")
       Lazy.fix \loop -> do
-        -- WHAT??? WHY IS THIS NECESSARY??
-        Aff.delay (1000.0 # Milliseconds)
         maybeFilename <- AVar.take downloadQueue
         case maybeFilename of
           Just filename -> do
-            -- log ("Working on file " <> filename)
             handleDownload messageQueue bufferRef filename
+            -- Clear the buffer to re-use it for the next file
             liftEffect (Ref.write "" bufferRef)
             loop
           Nothing -> do
             pure unit
 
-    let batchSize = 10
+    let batchSize = 100
 
     batchMessagesFiber <- Aff.forkAff do
       log "BATCH_PROCESSOR: Starting"
       messageRef <- liftEffect (Ref.new Nil)
       Lazy.fix \loop -> do
-        -- log "BATCH_PROCESSOR: About to TAKE from messageQueue (blocking until message available)"
         maybeMessage <- AVar.take messageQueue
-        -- log
-        --   ( "BATCH_PROCESSOR: TAKEN from queue: " <> case maybeMessage of
-        --       Just msg -> "Just " <> msg.id
-        --       Nothing -> "Nothing (completion signal)"
-        --   )
+        liftEffect (runEffectFn1 consoleCount "BATCH_PROCESSOR: TAKE from messageQueue")
         case maybeMessage of
           Just message -> do
             messages <- liftEffect (Ref.modify (message : _) messageRef)
@@ -180,8 +171,6 @@ handleDownload messageQueue bufferRef filename = do
   let
     handleChunk maybeChunk = Aff.launchAff_ do
       buffer <- liftEffect (Ref.read bufferRef)
-      -- WHAT??? IF I ADD LOGGING HERE (UNCOMMENT THE LINE BELOW) THE UI DOESN'T UPDATE??
-      -- Console.log ("[SIZE] buffer size " <> show (String.length buffer) <> "   " <> String.take 50 buffer)
       let
         { input, streamIsDone } = case maybeChunk of
           Just chunk -> { input: buffer <> chunk, streamIsDone: false }
@@ -195,12 +184,12 @@ handleDownload messageQueue bufferRef filename = do
           -- log ("[HANDLE_DOWNLOAD] Handling " <> show (Foldable.length messages :: Int) <> " messages")
           for_ messages \message -> do
             messageForPGlite <- liftEffect (makeMessageForPGlite filename message)
-            Aff.forkAff do
-              AVar.put (Just messageForPGlite) messageQueue
+            Aff.forkAff (AVar.put (Just messageForPGlite) messageQueue)
           -- when (String.length remainder > 0) do log ("[HANDLE_DOWNLOAD] Writing remainder " <> String.take 60 (show remainder) <> "...")
           liftEffect (Ref.write remainder bufferRef)
 
-  Aff.Compat.fromEffectFnAff (fetchStreamImpl { filename, onChunk: Nullable.toMaybe >>> handleChunk })
+  log "handleDownload: Starting fetchText"
+  Aff.Compat.fromEffectFnAff (fetchText { filename, onChunk: Nullable.toMaybe >>> handleChunk })
 
 handleParseError
   :: forall m

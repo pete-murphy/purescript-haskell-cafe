@@ -6,11 +6,11 @@ const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
 });
 
 worker.onmessage = (d) => {
-  if (d.data !== "shit");
+  if (d.data !== "DB_READY");
   const button = document.createElement("button");
-  button.innerHTML = "Click me if you want to see results";
+  button.innerHTML = "Click to start fetching text files";
   button.onclick = () => worker.postMessage("go");
-  document.getElementById("app").appendChild(button);
+  document.body.appendChild(button);
 };
 
 export async function newPGlite() {
@@ -103,13 +103,18 @@ export function liveQuery(pglite) {
       search TSVECTOR NOT NULL
     );
   `);
+
   pglite.live.query({
     query: "SELECT * FROM messages ORDER BY date ASC;",
     offset: 0,
     limit: 100,
     callback: (res) => {
-      console.log(performance.now(), "[PGlite] live query callback");
-      renderMessages(res, app);
+      console.log(
+        performance.now(),
+        "[PGlite] live query callback",
+        res.rows.length
+      );
+      requestAnimationFrame(() => renderMessages(res, app));
     },
   });
   pglite.live.query({
