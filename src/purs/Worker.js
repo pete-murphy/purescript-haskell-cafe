@@ -121,6 +121,8 @@ export function fetchStreamImpl({ filename, onChunk }) {
 }
 
 async function fetchStream(filename, onChunk) {
+  console.count("fetchStream");
+  console.log(`[fetchStream] fetching ${filename}`);
   const res = await fetch(`/haskell-cafe/${filename}`);
   const decoded = (
     filename.endsWith(".gz")
@@ -137,4 +139,14 @@ async function fetchStream(filename, onChunk) {
     }
     onChunk(value)();
   }
+}
+
+export function setupListener(callback) {
+  self.onmessage = (data) => {
+    callback();
+  };
+}
+
+export function postMessage(string) {
+  self.postMessage(string);
 }

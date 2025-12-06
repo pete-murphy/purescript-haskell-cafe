@@ -1,20 +1,17 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { live } from "@electric-sql/pglite/live";
 
-// function worker() {
 const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
   type: "module",
 });
 
-export function awaitWorkerReady(affError, affSuccess) {
-  worker.onmessage = (ev) => {
-    ev.data == "pong" ? affSuccess() : affError();
-  };
-  worker.postMessage("ping");
-  return (_cancelError, _onCancelerError, onCancelerSuccess) => {
-    onCancelerSuccess();
-  };
-}
+worker.onmessage = (d) => {
+  if (d.data !== "shit");
+  const button = document.createElement("button");
+  button.innerHTML = "Click me if you want to see results";
+  button.onclick = () => worker.postMessage("go");
+  document.getElementById("app").appendChild(button);
+};
 
 export async function newPGlite() {
   const dbWorker = new Worker(
@@ -111,7 +108,7 @@ export function liveQuery(pglite) {
     offset: 0,
     limit: 100,
     callback: (res) => {
-      console.log(performance.now(), "[PGlite] live query callback", res);
+      console.log(performance.now(), "[PGlite] live query callback");
       renderMessages(res, app);
     },
   });

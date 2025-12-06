@@ -24,7 +24,7 @@ foreign import worker :: Effect Worker
 
 main :: Effect Unit
 main = Aff.launchAff_ do
-  _ <- Compat.fromEffectFnAff awaitWorkerReady
+  -- _ <- Compat.fromEffectFnAff awaitWorkerReady
 
   pglite <- Promise.Aff.toAffE newPGlite
   _ <- liftEffect (runEffectFn1 liveQuery pglite)

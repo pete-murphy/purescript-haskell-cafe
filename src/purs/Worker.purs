@@ -21,19 +21,39 @@ import Effect.Aff (Aff, Milliseconds(..))
 import Effect.Aff as Aff
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
-import Effect.Aff.Compat (EffectFnAff)
+import Effect.Aff.Compat (EffectFn1, EffectFnAff, runEffectFn1)
 import Effect.Aff.Compat as Aff.Compat
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Class.Console as Console
 import Effect.Now as Now
+import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Unsafe as Effect.Unsafe
 import Message (Message)
 import Message.Parser as Message.Parser
 import MessageID as MessageID
+import Node.Buffer.Class as Buffer
 import Parsing (ParseError, Position(..), parseErrorMessage, parseErrorPosition)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff
+
+foreign import fetchStreamImpl
+  :: { filename :: String
+     , onChunk :: Nullable String -> Effect Unit
+     }
+  -> EffectFnAff Unit
+
+foreign import data PGlite :: Type
+
+foreign import newPGlite :: Effect (Promise PGlite)
+foreign import createSchema :: PGlite -> Effect (Promise Unit)
+foreign import insertMessages
+  :: { pglite :: PGlite, rows :: Array MessageForPGlite }
+  -> EffectFnAff Unit
+
+foreign import postMessage :: EffectFn1 String Unit
+
+foreign import setupListener :: EffectFn1 (Effect Unit) Unit
 
 log :: forall m. MonadEffect m => String -> m Unit
 log message = do
@@ -46,13 +66,18 @@ start = Effect.Unsafe.unsafePerformEffect do
   pure now
 
 main :: Effect Unit
-main = do
+main = Aff.launchAff_ do
+  log "Worker started in PureScript"
+  -- Initialize the database
+  pglite <- Promise.Aff.toAffE newPGlite
+  Promise.Aff.toAffE (createSchema pglite)
+  log "Created schema"
+  liftEffect (runEffectFn1 setupListener (handleMessage pglite))
+  liftEffect (runEffectFn1 postMessage "shit")
+
+handleMessage :: PGlite -> Effect Unit
+handleMessage pglite = do
   (Aff.launchAff_ <<< Aff.supervise) do
-    log "Worker started in PureScript"
-    -- Initialize the database
-    pglite <- Promise.Aff.toAffE newPGlite
-    Promise.Aff.toAffE (createSchema pglite)
-    log "Created schema"
 
     -- Start timer
     startTime <- liftEffect Now.now
@@ -67,26 +92,35 @@ main = do
     --   Array.take 1 (Array.drop 80 filenames) -- File at index 80
     --   Array.take 2 (Array.drop 80 filenames) -- Two files starting at 80
     --   Array.take 5 (Array.drop 80 filenames) -- Five files starting at 80 (original)
-    let testFiles = Array.take 80 (Array.drop 8 filenames)
+    -- let testFiles = Array.take 80 (Array.drop 8 filenames)
+    let testFiles = Array.take 4 $ Array.drop 200 filenames
     log ("Testing with " <> show (Array.length testFiles) <> " file(s): " <> String.joinWith ", " testFiles)
     for_ testFiles \filename -> do
       Aff.forkAff (AVar.put (Just filename) downloadQueue)
 
+    log "MAIN: Waiting for all download workers to complete"
+
     let downloadConcurrency = 8
     for_ (Array.range 1 downloadConcurrency) \_ -> do
       Aff.forkAff (AVar.put Nothing downloadQueue)
+
+    log "MAIN: All download workers started"
 
     -- Initialize the message queue
     messageQueue <- AVar.empty
 
     -- Start the download threads
     downloadFibers <- for (Array.range 1 downloadConcurrency) \_ -> Aff.forkAff do
+      bufferRef <- liftEffect (Ref.new "")
       Lazy.fix \loop -> do
+        -- WHAT??? WHY IS THIS NECESSARY??
+        Aff.delay (1000.0 # Milliseconds)
         maybeFilename <- AVar.take downloadQueue
         case maybeFilename of
           Just filename -> do
-            log ("Working on file " <> filename)
-            handleDownload messageQueue filename
+            -- log ("Working on file " <> filename)
+            handleDownload messageQueue bufferRef filename
+            liftEffect (Ref.write "" bufferRef)
             loop
           Nothing -> do
             pure unit
@@ -97,28 +131,25 @@ main = do
       log "BATCH_PROCESSOR: Starting"
       messageRef <- liftEffect (Ref.new Nil)
       Lazy.fix \loop -> do
-        log "BATCH_PROCESSOR: About to TAKE from messageQueue (blocking until message available)"
+        -- log "BATCH_PROCESSOR: About to TAKE from messageQueue (blocking until message available)"
         maybeMessage <- AVar.take messageQueue
-        log
-          ( "BATCH_PROCESSOR: TAKEN from queue: " <> case maybeMessage of
-              Just msg -> "Just " <> msg.id
-              Nothing -> "Nothing (completion signal)"
-          )
+        -- log
+        --   ( "BATCH_PROCESSOR: TAKEN from queue: " <> case maybeMessage of
+        --       Just msg -> "Just " <> msg.id
+        --       Nothing -> "Nothing (completion signal)"
+        --   )
         case maybeMessage of
           Just message -> do
             messages <- liftEffect (Ref.modify (message : _) messageRef)
             let currentCount = List.length messages
-            -- log ("BATCH_PROCESSOR: Received message " <> message.id <> ", accumulator size = " <> show currentCount)
+
             when (currentCount >= batchSize) do
               batch <- List.take batchSize <$> liftEffect (Ref.read messageRef)
               liftEffect (Ref.write (List.drop batchSize messages) messageRef)
-              log ("BATCH_PROCESSOR: INSERTING batch of " <> show (List.length batch) <> " messages")
-              -- Fork the insert so it doesn't block message processing
-              void
-                ( do
-                    Aff.Compat.fromEffectFnAff (insertMessages { pglite, rows: Array.fromFoldable batch })
-                    log ("BATCH_PROCESSOR: Batch insert completed")
-                )
+              void do
+                Aff.Compat.fromEffectFnAff (insertMessages { pglite, rows: Array.fromFoldable batch })
+                log ("BATCH_PROCESSOR: Batch insert completed")
+
             loop
 
           Nothing -> do
@@ -144,12 +175,13 @@ main = do
     end <- liftEffect Now.now
     log ("[DONE] Everything" <> show (Instant.diff end startTime :: Milliseconds))
 
-handleDownload :: AVar (Maybe MessageForPGlite) -> String -> Aff Unit
-handleDownload messageQueue filename = do
-  bufferRef <- liftEffect (Ref.new "")
+handleDownload :: AVar (Maybe MessageForPGlite) -> Ref String -> String -> Aff Unit
+handleDownload messageQueue bufferRef filename = do
   let
     handleChunk maybeChunk = Aff.launchAff_ do
       buffer <- liftEffect (Ref.read bufferRef)
+      -- WHAT??? IF I ADD LOGGING HERE (UNCOMMENT THE LINE BELOW) THE UI DOESN'T UPDATE??
+      -- Console.log ("[SIZE] buffer size " <> show (String.length buffer) <> "   " <> String.take 50 buffer)
       let
         { input, streamIsDone } = case maybeChunk of
           Just chunk -> { input: buffer <> chunk, streamIsDone: false }
@@ -160,15 +192,14 @@ handleDownload messageQueue filename = do
         Left err -> do
           handleParseError input err
         Right { messages, remainder } -> void do
-          log ("Handling " <> show (Foldable.length messages :: Int) <> " messages")
+          -- log ("[HANDLE_DOWNLOAD] Handling " <> show (Foldable.length messages :: Int) <> " messages")
           for_ messages \message -> do
             messageForPGlite <- liftEffect (makeMessageForPGlite filename message)
-            log ("PUTTING message into queue: " <> messageForPGlite.id)
             Aff.forkAff do
               AVar.put (Just messageForPGlite) messageQueue
-              log ("PUT message into queue completed: " <> messageForPGlite.id)
-          when (String.length remainder > 0) do log ("Writing remainder " <> String.take 60 (show remainder) <> "...")
+          -- when (String.length remainder > 0) do log ("[HANDLE_DOWNLOAD] Writing remainder " <> String.take 60 (show remainder) <> "...")
           liftEffect (Ref.write remainder bufferRef)
+
   Aff.Compat.fromEffectFnAff (fetchStreamImpl { filename, onChunk: Nullable.toMaybe >>> handleChunk })
 
 handleParseError
@@ -184,20 +215,6 @@ handleParseError input err = do
     context = String.CodeUnits.slice (index - 20) (index + 20) input
   log (msg <> " at position " <> show index)
   log ("Context: \n" <> context)
-
-foreign import fetchStreamImpl
-  :: { filename :: String
-     , onChunk :: Nullable String -> Effect Unit
-     }
-  -> EffectFnAff Unit
-
-foreign import data PGlite :: Type
-
-foreign import newPGlite :: Effect (Promise PGlite)
-foreign import createSchema :: PGlite -> Effect (Promise Unit)
-foreign import insertMessages
-  :: { pglite :: PGlite, rows :: Array MessageForPGlite }
-  -> EffectFnAff Unit
 
 type MessageForPGlite =
   { id :: String
