@@ -34,8 +34,8 @@ export const Messages: React.FC<MessagesProps> = () => {
   const query = React.useMemo(
     () =>
       searchQuery
-        ? `WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) DESC;`
-        : `SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages ORDER BY path;`,
+        ? `WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) ASC;`
+        : `SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages ORDER BY subject, date ASC;`,
     [searchQuery]
   );
   const params = React.useMemo(

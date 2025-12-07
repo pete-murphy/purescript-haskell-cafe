@@ -81,7 +81,7 @@ function buildInsertQuery(rows) {
       refs,
       content,
       month_file,
-      in_reply_to.concat(id).join("."),
+      refs.concat(id).join("."),
     ]
   );
 
