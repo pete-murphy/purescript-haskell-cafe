@@ -9,13 +9,18 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.17",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.22",
     "http-server": "^14.1.1",
+    "postcss": "^8.5.6",
     "prettier": "^3.6.2",
+    "purs-backend-es": "^1.4.3",
     "purs-tidy": "^0.11.1",
     "spago": "^0.93.44",
+    "tailwindcss": "^4.1.17",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
     "wrangler": "^4.51.0"
@@ -23,6 +28,7 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
     "@electric-sql/pglite-react": "^0.2.32",
+    "@uidotdev/usehooks": "^2.4.1",
     "ink": "^6.5.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.1"

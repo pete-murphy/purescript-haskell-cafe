@@ -113,54 +113,84 @@ export const Messages: React.FC<MessagesProps> = () => {
 
   return (
     <>
-      <div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button onClick={handleDelete} style={{ marginLeft: "8px" }}>
-          Delete All Messages
-        </button>
-        <button onClick={handleCreateTable} style={{ marginLeft: "8px" }}>
-          Create Table
-        </button>
-      </div>
-      <div className="container">
-        <progress value={rowCount?.rows?.at(0)?.count ?? 0} max={MAX_ROWS} />{" "}
-        {rowCount?.rows?.at(0)?.count?.toLocaleString()} out of{" "}
-        {MAX_ROWS.toLocaleString()} ({progressPercentage.toFixed(2)}%)
-      </div>
-      <div className="container">
-        <div className="">
-          Matches {queryResult?.rows.length.toLocaleString()} out of{" "}
-          {rowCount?.rows?.at(0)?.count?.toLocaleString() ?? "N/A"}
+      <div className="font-sans mb-8 space-y-6">
+        {/* Search and Actions */}
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search messages..."
+            className="flex-1 px-4 py-2 bg-slate-900/50 border border-slate-800 rounded-lg text-slate-50 placeholder-slate-500 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all"
+          />
+          <button
+            onClick={handleCreateTable}
+            className="px-4 py-2 bg-white text-slate-950 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
+          >
+            Create Table
+          </button>
+          <button
+            onClick={handleDelete}
+            className="px-4 py-2 bg-slate-800 text-slate-200 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
+          >
+            Delete All
+          </button>
+        </div>
+
+        {/* Progress Section */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-400 font-normal">Loading progress</span>
+            <span className="text-slate-300 font-medium">
+              {rowCount?.rows?.at(0)?.count?.toLocaleString()} /{" "}
+              {MAX_ROWS.toLocaleString()} ({progressPercentage.toFixed(1)}%)
+            </span>
+          </div>
+          <div className="h-2 bg-slate-900 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-white transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Results Summary */}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-slate-400">Showing</span>
+          <span className="text-slate-200 font-medium">
+            {queryResult?.rows.length.toLocaleString()}
+          </span>
+          <span className="text-slate-400">of</span>
+          <span className="text-slate-200 font-medium">
+            {rowCount?.rows?.at(0)?.count?.toLocaleString() ?? "N/A"}
+          </span>
+          <span className="text-slate-400">messages</span>
         </div>
       </div>
-      <div className="container">
+      <div className="font-mono">
         {messages.map((row, index) => {
           // console.log("level", row.level);
           const hue = simpleHash(row.id) % 360;
           return (
             <React.Fragment key={row.id || index}>
               <div
-                className="message"
+                className="mb-0"
                 style={{ paddingLeft: `${(row.level ?? 0) * 20}px` }}
               >
-                <div className="message-header">
-                  <div className="message-subject">
+                <div className="mb-0 text-slate-200">
+                  <div className="text-slate-200 font-black text-base mb-0 font-sans">
                     {row.subject || "No subject"}
                   </div>
-                  <div className="message-meta message-from">
+                  <div className="text-xs text-slate-200 mb-1">
                     From: {row.author || "Unknown"} | {formatDate(row.date)}
                   </div>
                   {row.id && (
-                    <div className="message-meta">
+                    <div className="text-xs text-slate-500 mb-1">
                       ID: <ColoredID id={row.id} />
                     </div>
                   )}
                   {row.in_reply_to && row.in_reply_to.length > 0 && (
-                    <div className="message-meta">
+                    <div className="text-xs text-slate-500 mb-1">
                       In-Reply-To:{" "}
                       {row.in_reply_to.map((id) => (
                         <ColoredID key={id} id={id} />
@@ -168,7 +198,7 @@ export const Messages: React.FC<MessagesProps> = () => {
                     </div>
                   )}
                   {row.refs && row.refs.length > 0 && (
-                    <div className="message-meta">
+                    <div className="text-xs text-slate-500 mb-1">
                       References:{" "}
                       {row.refs.map((id) => (
                         <ColoredID key={id} id={id} />
@@ -176,12 +206,14 @@ export const Messages: React.FC<MessagesProps> = () => {
                     </div>
                   )}
                   {row.month_file && (
-                    <div className="message-meta">File: {row.month_file}</div>
+                    <div className="text-xs text-slate-500 mb-1">
+                      File: {row.month_file}
+                    </div>
                   )}
                 </div>
               </div>
               {index < messages.length - 1 && (
-                <div className="message-separator"></div>
+                <div className="border-t border-slate-900"></div>
               )}
             </React.Fragment>
           );
@@ -195,15 +227,13 @@ function ColoredID(props: { id: string }) {
   const hue = simpleHash(props.id) % 360;
   return (
     <div
+      className="inline-block px-1 py-0.5 rounded"
       style={
         {
           color: `var(--color-4)`,
           backgroundColor: `var(--color-14)`,
           "--color-hue": hue.toString(),
           "--c": "1",
-          display: "inline-block",
-          padding: "0.125rem 0.25rem",
-          borderRadius: "0.125rem",
         } as React.CSSProperties
       }
     >
