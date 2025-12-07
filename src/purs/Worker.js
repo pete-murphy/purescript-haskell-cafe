@@ -123,8 +123,10 @@ async function fetchTextHelper(filename, onChunk) {
 }
 
 export function setupListener(callback) {
-  self.onmessage = (data) => {
-    callback();
+  self.onmessage = ({ data }) => {
+    console.log("[setupListener] data", data);
+    // TODO: Better way of initializing?
+    if (data === "go") callback();
   };
 }
 

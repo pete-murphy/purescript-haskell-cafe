@@ -154,7 +154,7 @@ async function handleDbForward(message) {
   }
 }
 
-export async function liveQuery(pglite, searchQuery = "thread") {
+export async function liveQuery(pglite) {
   console.log("[liveQuery] Starting live query");
   const appElement = document.getElementById("app");
   if (!appElement) {
@@ -181,5 +181,5 @@ export async function liveQuery(pglite, searchQuery = "thread") {
 
   // Initialize React app
   const root = createRoot(appElement);
-  root.render(React.createElement(App, { pglite, searchQuery }));
+  root.render(React.createElement(App, { pglite }));
 }

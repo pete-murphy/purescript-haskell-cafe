@@ -4,14 +4,12 @@ import { Messages } from "./Messages";
 
 interface AppProps {
   pglite: any; // PGliteWorker instance
-  searchQuery?: string;
 }
 
-export const App: React.FC<AppProps> = ({ pglite, searchQuery }) => {
+export const App: React.FC<AppProps> = ({ pglite }) => {
   return (
     <PGliteProvider db={pglite}>
-      <Messages searchQuery={searchQuery} />
+      <Messages />
     </PGliteProvider>
   );
 };
-
