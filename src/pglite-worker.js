@@ -14,7 +14,8 @@ async function ensureDb() {
   if (dbInstance) return dbInstance;
   if (!dbReady) {
     dbReady = (async () => {
-      const db = new PGlite("memory://haskell_cafe", {
+      const db = new PGlite("opfs-ahp://haskell_cafe", {
+        relaxedDurability: true,
         extensions: {
           live,
           ltree,
