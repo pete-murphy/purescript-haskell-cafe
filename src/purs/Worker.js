@@ -1,3 +1,5 @@
+import { schemaSQL } from "../../src/lib/schema.js";
+
 const FORWARD_CHANNEL = "db-forward";
 
 let forwardRequestId = 0;
@@ -28,10 +30,6 @@ function callMain(op, payload, transfer = []) {
   });
 }
 
-export function consoleCount(label) {
-  console.count(label);
-}
-
 export async function newPGlite() {
   // The DB now lives behind the main thread's PGliteWorker. We forward calls.
   await callMain("init");
@@ -45,26 +43,8 @@ export async function newPGlite() {
 }
 
 export function createSchema(pglite) {
-  return () =>
-    pglite.exec(`
-      CREATE EXTENSION IF NOT EXISTS ltree;
-      CREATE EXTENSION IF NOT EXISTS pg_trgm;
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        subject TEXT,
-        author TEXT,
-        date TIMESTAMPTZ,
-        in_reply_to TEXT[],
-        refs TEXT[],
-        content TEXT,
-        month_file TEXT,
-        path LTREE NOT NULL,
-        search TSVECTOR NOT NULL
-      );
-    `);
+  return () => pglite.exec(schemaSQL);
 }
-
-let count = 0;
 
 export function insertMessages({ pglite, rows }) {
   return (affError, affSuccess) => {
@@ -102,8 +82,6 @@ export function fetchText({ filename, onChunk }) {
 }
 
 async function fetchTextHelper(filename, onChunk) {
-  console.count("fetchText");
-  console.log(`[fetchText] fetching ${filename}`);
   const res = await fetch(`/haskell-cafe/${filename}`);
   const decoded = (
     filename.endsWith(".gz")
@@ -124,7 +102,6 @@ async function fetchTextHelper(filename, onChunk) {
 
 export function setupListener(callback) {
   self.onmessage = ({ data }) => {
-    console.log("[setupListener] data", data);
     // TODO: Better way of initializing?
     if (data === "go") callback();
   };

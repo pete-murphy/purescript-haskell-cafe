@@ -3,6 +3,7 @@ import { live } from "@electric-sql/pglite/live";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "../../src/App";
+import { schemaSQL } from "../../src/lib/schema.js";
 
 const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
   type: "module",
@@ -161,23 +162,8 @@ export async function liveQuery(pglite) {
     throw new Error("App element not found");
   }
 
-  // Ensure schema (TODO: move this to a shared file, it is duplicated in Worker.js)
-  await pglite.exec(`
-    CREATE EXTENSION IF NOT EXISTS ltree;
-    CREATE EXTENSION IF NOT EXISTS pg_trgm;
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      subject TEXT,
-      author TEXT,
-      date TIMESTAMPTZ,
-      in_reply_to TEXT[],
-      refs TEXT[],
-      content TEXT,
-      month_file TEXT,
-      path LTREE NOT NULL,
-      search TSVECTOR NOT NULL
-    );
-  `);
+  // Ensure schema
+  await pglite.exec(schemaSQL);
 
   // Initialize React app
   const root = createRoot(appElement);

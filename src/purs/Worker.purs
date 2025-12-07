@@ -49,7 +49,6 @@ foreign import insertMessages
 
 foreign import postMessage :: EffectFn1 String Unit
 foreign import setupListener :: EffectFn1 (Effect Unit) Unit
-foreign import consoleCount :: EffectFn1 String Unit
 
 main :: Effect Unit
 main = Aff.launchAff_ do
