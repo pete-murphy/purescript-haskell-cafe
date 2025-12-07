@@ -18,9 +18,9 @@ foreign import worker :: Effect Worker
 main :: Effect Unit
 main = Aff.launchAff_ do
   pglite <- Promise.Aff.toAffE newPGlite
-  _ <- liftEffect (runEffectFn1 liveQuery pglite)
+  _ <- Promise.Aff.toAffE (runEffectFn1 liveQuery pglite)
   pure unit
 
 foreign import newPGlite :: Effect (Promise PGlite)
 foreign import data PGlite :: Type
-foreign import liveQuery :: EffectFn1 PGlite Unit
+foreign import liveQuery :: EffectFn1 PGlite (Promise Unit)

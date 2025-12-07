@@ -2,7 +2,7 @@ import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { live } from "@electric-sql/pglite/live";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "../App";
+import { App } from "../../src/App";
 
 const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
   type: "module",
