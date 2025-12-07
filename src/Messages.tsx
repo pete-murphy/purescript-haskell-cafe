@@ -1,4 +1,5 @@
 import React from "react";
+import { useDebounce } from "@uidotdev/usehooks";
 import { useLiveQuery, usePGlite } from "@electric-sql/pglite-react";
 import { deleteMessagesTableSQL, schemaSQL } from "./lib/schema.js";
 
@@ -31,29 +32,38 @@ const formatDate = (date: string | null) => {
 
 export const Messages: React.FC<MessagesProps> = () => {
   const [searchQuery, setSearchQuery] = React.useState("thread");
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
   const [tableVersion, setTableVersion] = React.useState(0);
   const db = usePGlite();
 
   const query = React.useMemo(
     () =>
-      searchQuery
+      debouncedSearchQuery
         ? `-- version: ${tableVersion}\n
           WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query)
           SELECT
             id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level
           FROM messages, search_query
           WHERE search @@ search_query.query
-          ORDER BY ts_rank_cd(search, search_query.query) ASC;`
+          ORDER BY ts_rank_cd(search, search_query.query) ASC
+          LIMIT 100;`
         : `-- version: ${tableVersion}\n
+          WITH messages_with_min_date AS (
+            SELECT 
+              id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level,
+              MIN(date) OVER (PARTITION BY subject) AS min_subject_date
+            FROM messages
+          )
           SELECT 
-            id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level
-          FROM messages
-          ORDER BY subject, date ASC;`,
-    [searchQuery, tableVersion]
+            id, subject, author, date, in_reply_to, refs, month_file, path, level
+          FROM messages_with_min_date
+          ORDER BY min_subject_date, subject, date ASC
+          LIMIT 100;`,
+    [debouncedSearchQuery, tableVersion]
   );
   const params = React.useMemo(
-    () => (searchQuery ? [searchQuery] : []),
-    [searchQuery]
+    () => (debouncedSearchQuery ? [debouncedSearchQuery] : []),
+    [debouncedSearchQuery]
   );
 
   const queryResult = useLiveQuery<Message>(query, params);
