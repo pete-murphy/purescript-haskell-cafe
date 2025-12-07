@@ -1,5 +1,8 @@
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import { live } from "@electric-sql/pglite/live";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "../App";
 
 const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), {
   type: "module",
@@ -151,61 +154,15 @@ async function handleDbForward(message) {
   }
 }
 
-function renderMessages(res, appElement) {
-  const { rows, offset } = res;
-
-  const formatDate = (date) => {
-    if (!date) return "Unknown date";
-    const d = new Date(date);
-    return d.toLocaleString(undefined, {
-      dateStyle: "long",
-      timeStyle: "short",
-    });
-  };
-
-  const escapeHtml = (text) => {
-    if (!text) return "";
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  };
-
-  const html = `
-    <div class="container">
-      ${
-        rows.length === 0
-          ? "No messages found"
-          : rows
-              .map(
-                (row, index) => `
-        <div class="message">
-          <div class="message-header">
-            <div class="message-subject">${escapeHtml(row.subject || "No subject")}</div>
-            <div class="message-meta message-from">
-              From: ${escapeHtml(row.author || "Unknown")} | ${formatDate(row.date)}
-            </div>
-            ${row.id ? `<div class="message-meta">ID: ${escapeHtml(row.id)}</div>` : ""}
-            ${row.in_reply_to.length > 0 ? `<div class="message-meta">In-Reply-To: ${row.in_reply_to.map((ref) => escapeHtml(ref)).join(", ")}</div>` : ""}
-            ${row.month_file ? `<div class="message-meta">File: ${escapeHtml(row.month_file)}</div>` : ""}
-          </div>
-
-        </div>
-        ${index < rows.length - 1 ? '<div class="message-separator"></div>' : ""}`
-              )
-              .join("")
-      }
-    </div>
-  `;
-
-  appElement.innerHTML = html;
-}
-
-export function liveQuery(pglite) {
+export async function liveQuery(pglite, searchQuery = "thread") {
   console.log("[liveQuery] Starting live query");
-  const app = document.getElementById("app");
+  const appElement = document.getElementById("app");
+  if (!appElement) {
+    throw new Error("App element not found");
+  }
+
   // Ensure schema (TODO: move this to a shared file, it is duplicated in Worker.js)
-  pglite.exec(`
+  await pglite.exec(`
     CREATE EXTENSION IF NOT EXISTS ltree;
     CREATE EXTENSION IF NOT EXISTS pg_trgm;
     CREATE TABLE IF NOT EXISTS messages (
@@ -222,35 +179,7 @@ export function liveQuery(pglite) {
     );
   `);
 
-  pglite.live.query({
-    query:
-      "SELECT * FROM messages WHERE search @@ websearch_to_tsquery('english', 'thread') ORDER BY date ASC;",
-    // query: "SELECT * FROM messages ORDER BY date ASC;",
-    offset: 0,
-    limit: 100,
-    callback: (res) => {
-      console.log(
-        humanReadableTimestamp(),
-        "[PGlite] live query callback",
-        res.rows.length
-      );
-      requestAnimationFrame(() => renderMessages(res, app));
-    },
-  });
-  pglite.live.query({
-    query: "SELECT COUNT(*) FROM messages;",
-    callback: (res) => {
-      console.log(
-        humanReadableTimestamp(),
-        "[PGlite] live query callback, count of rows",
-        res.rows.at(0)?.count
-      );
-    },
-  });
-}
-
-function humanReadableTimestamp() {
-  const now = Math.floor(performance.now());
-  const seconds = now / 1_000;
-  return seconds.toPrecision(3);
+  // Initialize React app
+  const root = createRoot(appElement);
+  root.render(React.createElement(App, { pglite, searchQuery }));
 }
