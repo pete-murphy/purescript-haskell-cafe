@@ -1,5 +1,6 @@
 import React from "react";
-import { useLiveQuery } from "@electric-sql/pglite-react";
+import { useLiveQuery, usePGlite } from "@electric-sql/pglite-react";
+import { deleteMessagesTableSQL, schemaSQL } from "./lib/schema.js";
 
 interface Message {
   id: string;
@@ -30,13 +31,15 @@ const formatDate = (date: string | null) => {
 
 export const Messages: React.FC<MessagesProps> = () => {
   const [searchQuery, setSearchQuery] = React.useState("thread");
+  const [tableVersion, setTableVersion] = React.useState(0);
+  const db = usePGlite();
 
   const query = React.useMemo(
     () =>
       searchQuery
-        ? `WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) ASC;`
-        : `SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages ORDER BY subject, date ASC;`,
-    [searchQuery]
+        ? `-- version: ${tableVersion}\nWITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) ASC;`
+        : `-- version: ${tableVersion}\nSELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages ORDER BY subject, date ASC;`,
+    [searchQuery, tableVersion]
   );
   const params = React.useMemo(
     () => (searchQuery ? [searchQuery] : []),
@@ -48,14 +51,45 @@ export const Messages: React.FC<MessagesProps> = () => {
   // LiveQueryResults has a rows property
   const messages = queryResult?.rows.slice(0, 100) ?? [];
 
-  const rowCount = useLiveQuery<{ count: number }>(
-    "SELECT COUNT(*) FROM messages;",
-    []
+  const countQuery = React.useMemo(
+    () => `-- version: ${tableVersion}\nSELECT COUNT(*) FROM messages;`,
+    [tableVersion]
   );
+  const rowCount = useLiveQuery<{ count: number }>(countQuery, []);
 
   const MAX_ROWS = 133_558;
   const progressPercentage =
     ((rowCount?.rows?.at(0)?.count ?? 0) / MAX_ROWS) * 100;
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete all messages? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    try {
+      await db.exec(deleteMessagesTableSQL);
+      await db.exec(schemaSQL);
+      // Force live queries to restart by incrementing table version
+      setTableVersion((v) => v + 1);
+    } catch (error) {
+      console.error("Error deleting messages table:", error);
+      alert("Failed to delete messages table. See console for details.");
+    }
+  };
+
+  const handleCreateTable = async () => {
+    try {
+      await db.exec(schemaSQL);
+      // Force live queries to restart by incrementing table version
+      setTableVersion((v) => v + 1);
+    } catch (error) {
+      console.error("Error creating messages table:", error);
+      alert("Failed to create messages table. See console for details.");
+    }
+  };
 
   return (
     <>
@@ -65,6 +99,12 @@ export const Messages: React.FC<MessagesProps> = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        <button onClick={handleDelete} style={{ marginLeft: "8px" }}>
+          Delete All Messages
+        </button>
+        <button onClick={handleCreateTable} style={{ marginLeft: "8px" }}>
+          Create Table
+        </button>
       </div>
       <div className="container">
         <progress value={rowCount?.rows?.at(0)?.count ?? 0} max={MAX_ROWS} />{" "}

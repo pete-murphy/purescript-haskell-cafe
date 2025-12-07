@@ -16,3 +16,4 @@ export const schemaSQL = `
   CREATE INDEX IF NOT EXISTS messages_search_idx ON messages USING GIN (search);
 `;
 
+export const deleteMessagesTableSQL = `DROP TABLE IF EXISTS messages CASCADE;`;
