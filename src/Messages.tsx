@@ -12,6 +12,7 @@ interface Message {
   month_file: string | null;
   path: string;
   search: string;
+  level: number | null;
 }
 
 interface MessagesProps {
@@ -34,7 +35,7 @@ export const Messages: React.FC<MessagesProps> = () => {
     () =>
       searchQuery
         ? `WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) DESC;`
-        : `SELECT id, subject, author, date, in_reply_to, refs, month_file FROM messages ORDER BY date DESC;`,
+        : `SELECT id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level FROM messages ORDER BY path;`,
     [searchQuery]
   );
   const params = React.useMemo(
@@ -77,33 +78,87 @@ export const Messages: React.FC<MessagesProps> = () => {
         </div>
       </div>
       <div className="container">
-        {messages.map((row, index) => (
-          <React.Fragment key={row.id || index}>
-            <div className="message">
-              <div className="message-header">
-                <div className="message-subject">
-                  {row.subject || "No subject"}
-                </div>
-                <div className="message-meta message-from">
-                  From: {row.author || "Unknown"} | {formatDate(row.date)}
-                </div>
-                {row.id && <div className="message-meta">ID: {row.id}</div>}
-                {row.in_reply_to && row.in_reply_to.length > 0 && (
-                  <div className="message-meta">
-                    In-Reply-To: {row.in_reply_to.join(", ")}
+        {messages.map((row, index) => {
+          // console.log("level", row.level);
+          const hue = simpleHash(row.id) % 360;
+          return (
+            <React.Fragment key={row.id || index}>
+              <div
+                className="message"
+                style={{ paddingLeft: `${(row.level ?? 0) * 20}px` }}
+              >
+                <div className="message-header">
+                  <div className="message-subject">
+                    {row.subject || "No subject"}
                   </div>
-                )}
-                {row.month_file && (
-                  <div className="message-meta">File: {row.month_file}</div>
-                )}
+                  <div className="message-meta message-from">
+                    From: {row.author || "Unknown"} | {formatDate(row.date)}
+                  </div>
+                  {row.id && (
+                    <div className="message-meta">
+                      ID: <ColoredID id={row.id} />
+                    </div>
+                  )}
+                  {row.in_reply_to && row.in_reply_to.length > 0 && (
+                    <div className="message-meta">
+                      In-Reply-To:{" "}
+                      {row.in_reply_to.map((id) => (
+                        <ColoredID key={id} id={id} />
+                      ))}
+                    </div>
+                  )}
+                  {row.refs && row.refs.length > 0 && (
+                    <div className="message-meta">
+                      References:{" "}
+                      {row.refs.map((id) => (
+                        <ColoredID key={id} id={id} />
+                      ))}
+                    </div>
+                  )}
+                  {row.month_file && (
+                    <div className="message-meta">File: {row.month_file}</div>
+                  )}
+                </div>
               </div>
-            </div>
-            {index < messages.length - 1 && (
-              <div className="message-separator"></div>
-            )}
-          </React.Fragment>
-        ))}
+              {index < messages.length - 1 && (
+                <div className="message-separator"></div>
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
     </>
   );
 };
+
+function ColoredID(props: { id: string }) {
+  const hue = simpleHash(props.id) % 360;
+  return (
+    <div
+      style={
+        {
+          color: `var(--color-4)`,
+          backgroundColor: `var(--color-14)`,
+          "--color-hue": hue.toString(),
+          "--c": "1",
+          display: "inline-block",
+          padding: "0.125rem 0.25rem",
+          borderRadius: "0.125rem",
+        } as React.CSSProperties
+      }
+    >
+      {props.id}
+    </div>
+  );
+}
+
+function simpleHash(str: string) {
+  let hash = 0;
+  if (str.length === 0) return hash;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char; // A common, simple hashing algorithm
+    hash |= 0; // Convert to 32-bit integer
+  }
+  return hash;
+}
