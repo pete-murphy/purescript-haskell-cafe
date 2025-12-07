@@ -12,11 +12,10 @@ import Data.List as List
 import Data.Maybe (Maybe(..))
 import Data.Nullable (Nullable)
 import Data.Nullable as Nullable
-import Data.String as String
 import Data.String.CodeUnits as String.CodeUnits
 import Data.Traversable (for, for_)
 import Effect (Effect)
-import Effect.Aff (Aff, Milliseconds(..))
+import Effect.Aff (Aff, Milliseconds)
 import Effect.Aff as Aff
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
@@ -27,7 +26,6 @@ import Effect.Class.Console as Console
 import Effect.Now as Now
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
-import Effect.Unsafe as Effect.Unsafe
 import Message (Message)
 import Message.Parser as Message.Parser
 import MessageID as MessageID
@@ -53,23 +51,11 @@ foreign import postMessage :: EffectFn1 String Unit
 foreign import setupListener :: EffectFn1 (Effect Unit) Unit
 foreign import consoleCount :: EffectFn1 String Unit
 
-log :: forall m. MonadEffect m => String -> m Unit
-log message = do
-  Milliseconds now <- liftEffect (Instant.unInstant <$> Now.now)
-  Console.log (show (now - start) <> "ms - " <> message)
-
-start :: Number
-start = Effect.Unsafe.unsafePerformEffect do
-  Milliseconds now <- Instant.unInstant <$> Now.now
-  pure now
-
 main :: Effect Unit
 main = Aff.launchAff_ do
-  log "Worker started in PureScript"
   -- Initialize the database
   pglite <- Promise.Aff.toAffE newPGlite
   Promise.Aff.toAffE (createSchema pglite)
-  log "Created schema"
   liftEffect (runEffectFn1 setupListener (handleMessage pglite))
   liftEffect (runEffectFn1 postMessage "DB_READY")
 
@@ -83,26 +69,12 @@ handleMessage pglite = do
     -- Initialize the download queue
     downloadQueue <- AVar.empty
 
-    -- Put the filenames into the download queue
-    -- Try different file ranges to isolate problematic files
-    -- Options:
-    --   Array.take 1 (Array.drop 0 filenames)  -- First file
-    --   Array.take 1 (Array.drop 80 filenames) -- File at index 80
-    --   Array.take 2 (Array.drop 80 filenames) -- Two files starting at 80
-    --   Array.take 5 (Array.drop 80 filenames) -- Five files starting at 80 (original)
-    -- let testFiles = Array.take 80 (Array.drop 8 filenames)
-    let testFiles = filenames
-    log ("Testing with " <> show (Array.length testFiles) <> " file(s): " <> String.joinWith ", " testFiles)
-    for_ testFiles \filename -> do
+    for_ filenames \filename -> do
       Aff.forkAff (AVar.put (Just filename) downloadQueue)
-
-    log "MAIN: Waiting for all download workers to complete"
 
     let downloadConcurrency = 8
     for_ (Array.range 1 downloadConcurrency) \_ -> do
       Aff.forkAff (AVar.put Nothing downloadQueue)
-
-    log "MAIN: All download workers started"
 
     -- Initialize the message queue
     messageQueue <- AVar.empty
@@ -124,11 +96,9 @@ handleMessage pglite = do
     let batchSize = 100
 
     batchMessagesFiber <- Aff.forkAff do
-      log "BATCH_PROCESSOR: Starting"
       messageRef <- liftEffect (Ref.new Nil)
       Lazy.fix \loop -> do
         maybeMessage <- AVar.take messageQueue
-        liftEffect (runEffectFn1 consoleCount "BATCH_PROCESSOR: TAKE from messageQueue")
         case maybeMessage of
           Just message -> do
             messages <- liftEffect (Ref.modify (message : _) messageRef)
@@ -139,32 +109,18 @@ handleMessage pglite = do
               liftEffect (Ref.write (List.drop batchSize messages) messageRef)
               void do
                 Aff.Compat.fromEffectFnAff (insertMessages { pglite, rows: Array.fromFoldable batch })
-                log ("BATCH_PROCESSOR: Batch insert completed")
 
             loop
 
           Nothing -> do
             remainingMessages <- liftEffect (Ref.read messageRef)
-            let remainingCount = List.length remainingMessages
-            when (remainingCount > 0) do
-              log ("BATCH_PROCESSOR: Processing final batch of " <> show remainingCount <> " messages")
             Aff.Compat.fromEffectFnAff (insertMessages { pglite, rows: Array.fromFoldable remainingMessages })
-            log ("BATCH_PROCESSOR: Final batch insert completed, exiting")
 
-    log "MAIN: Waiting for all download workers to complete"
     for_ downloadFibers Aff.joinFiber
-    log "MAIN: All download workers finished"
-
-    log "MAIN: Sending completion signal (Nothing) to messageQueue"
-    AVar.put Nothing messageQueue
-    log "MAIN: Completion signal sent"
-
-    log "MAIN: Waiting for batch processor to finish"
     Aff.joinFiber batchMessagesFiber
-    log "MAIN: Batch processor finished"
 
     end <- liftEffect Now.now
-    log ("[DONE] Everything" <> show (Instant.diff end startTime :: Milliseconds))
+    Console.log ("[DONE] Everything" <> show (Instant.diff end startTime :: Milliseconds))
 
 handleDownload :: AVar (Maybe MessageForPGlite) -> Ref String -> String -> Aff Unit
 handleDownload messageQueue bufferRef filename = do
@@ -181,14 +137,11 @@ handleDownload messageQueue bufferRef filename = do
         Left err -> do
           handleParseError input err
         Right { messages, remainder } -> void do
-          -- log ("[HANDLE_DOWNLOAD] Handling " <> show (Foldable.length messages :: Int) <> " messages")
           for_ messages \message -> do
             messageForPGlite <- liftEffect (makeMessageForPGlite filename message)
             Aff.forkAff (AVar.put (Just messageForPGlite) messageQueue)
-          -- when (String.length remainder > 0) do log ("[HANDLE_DOWNLOAD] Writing remainder " <> String.take 60 (show remainder) <> "...")
           liftEffect (Ref.write remainder bufferRef)
 
-  log "handleDownload: Starting fetchText"
   Aff.Compat.fromEffectFnAff (fetchText { filename, onChunk: Nullable.toMaybe >>> handleChunk })
 
 handleParseError
@@ -202,8 +155,8 @@ handleParseError input err = do
     msg = parseErrorMessage err
     Position { index } = parseErrorPosition err
     context = String.CodeUnits.slice (index - 20) (index + 20) input
-  log (msg <> " at position " <> show index)
-  log ("Context: \n" <> context)
+  Console.log (msg <> " at position " <> show index)
+  Console.log ("Context: \n" <> context)
 
 type MessageForPGlite =
   { id :: String
