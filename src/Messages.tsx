@@ -33,8 +33,8 @@ export const Messages: React.FC<MessagesProps> = () => {
   const query = React.useMemo(
     () =>
       searchQuery
-        ? `SELECT * FROM messages WHERE search @@ websearch_to_tsquery('english', $1) ORDER BY date ASC LIMIT 100;`
-        : `SELECT * FROM messages ORDER BY date ASC LIMIT 100;`,
+        ? `WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query) SELECT id, subject, author, date, in_reply_to, refs, month_file FROM messages, search_query WHERE search @@ search_query.query ORDER BY ts_rank_cd(search, search_query.query) DESC;`
+        : `SELECT id, subject, author, date, in_reply_to, refs, month_file FROM messages ORDER BY date DESC;`,
     [searchQuery]
   );
   const params = React.useMemo(
@@ -45,15 +45,16 @@ export const Messages: React.FC<MessagesProps> = () => {
   const queryResult = useLiveQuery<Message>(query, params);
 
   // LiveQueryResults has a rows property
-  const messages = queryResult?.rows ?? [];
+  const messages = queryResult?.rows.slice(0, 100) ?? [];
 
-  // if (!queryResult) {
-  //   return <div className="container">Loading...</div>;
-  // }
+  const rowCount = useLiveQuery<{ count: number }>(
+    "SELECT COUNT(*) FROM messages;",
+    []
+  );
 
-  // if (messages.length === 0) {
-  //   return <div className="container">No messages found</div>;
-  // }
+  const MAX_ROWS = 133_558;
+  const progressPercentage =
+    ((rowCount?.rows?.at(0)?.count ?? 0) / MAX_ROWS) * 100;
 
   return (
     <>
@@ -63,6 +64,17 @@ export const Messages: React.FC<MessagesProps> = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+      </div>
+      <div className="container">
+        <progress value={rowCount?.rows?.at(0)?.count ?? 0} max={MAX_ROWS} />{" "}
+        {rowCount?.rows?.at(0)?.count?.toLocaleString()} out of{" "}
+        {MAX_ROWS.toLocaleString()} ({progressPercentage.toFixed(2)}%)
+      </div>
+      <div className="container">
+        <div className="">
+          Matches {queryResult?.rows.length.toLocaleString()} out of{" "}
+          {rowCount?.rows?.at(0)?.count?.toLocaleString() ?? "N/A"}
+        </div>
       </div>
       <div className="container">
         {messages.map((row, index) => (

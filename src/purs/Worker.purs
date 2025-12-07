@@ -91,7 +91,7 @@ handleMessage pglite = do
     --   Array.take 2 (Array.drop 80 filenames) -- Two files starting at 80
     --   Array.take 5 (Array.drop 80 filenames) -- Five files starting at 80 (original)
     -- let testFiles = Array.take 80 (Array.drop 8 filenames)
-    let testFiles = Array.take 20 (Array.drop 100 filenames)
+    let testFiles = filenames
     log ("Testing with " <> show (Array.length testFiles) <> " file(s): " <> String.joinWith ", " testFiles)
     for_ testFiles \filename -> do
       Aff.forkAff (AVar.put (Just filename) downloadQueue)

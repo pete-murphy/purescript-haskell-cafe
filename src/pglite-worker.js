@@ -120,6 +120,7 @@ async function handleInsertMessages(db, rows) {
       (${fields.concat("search").join(", ")}) VALUES ${placeholders.join(", ")} 
       ON CONFLICT DO NOTHING;`;
 
+  console.log("[handleMessage] query", query);
   const res = await db.query(query, flattened);
   console.timeEnd(label);
   return { rowsAffected: res?.rowCount ?? rows.length };
@@ -135,6 +136,8 @@ self.addEventListener("message", (event) => {
     self.postMessage({ channel: RPC_CHANNEL, id, ...body });
 
   (async () => {
+    console.log("[handleMessage] data", data);
+    console.log("[handleMessage] op", op);
     try {
       const db = await ensureDb();
       switch (op) {
