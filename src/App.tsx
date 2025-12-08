@@ -9,7 +9,9 @@ interface AppProps {
 export const App: React.FC<AppProps> = ({ pglite }) => {
   return (
     <PGliteProvider db={pglite}>
-      <Messages />
+      <div className="min-h-screen">
+        <Messages />
+      </div>
     </PGliteProvider>
   );
 };

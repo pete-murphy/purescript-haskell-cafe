@@ -7,7 +7,6 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Aff as Aff
-import Effect.Class (liftEffect)
 import Effect.Uncurried (EffectFn1, runEffectFn1)
 import Promise (Promise)
 import Promise.Aff as Promise.Aff

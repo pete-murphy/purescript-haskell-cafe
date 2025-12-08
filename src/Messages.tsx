@@ -1,7 +1,19 @@
 import React from "react";
 import { useDebounce } from "@uidotdev/usehooks";
 import { useLiveQuery, usePGlite } from "@electric-sql/pglite-react";
+import { format } from "date-fns";
+import { parseDate } from "chrono-node";
+import { Calendar as CalendarIcon } from "lucide-react";
+// @ts-ignore
 import { deleteMessagesTableSQL, schemaSQL } from "./lib/schema.js";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface Message {
   id: string;
@@ -30,41 +42,69 @@ const formatDate = (date: string | null) => {
   });
 };
 
+function formatDateForDisplay(date: Date | undefined) {
+  if (!date) {
+    return "";
+  }
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export const Messages: React.FC<MessagesProps> = () => {
   const [searchQuery, setSearchQuery] = React.useState("thread");
   const debouncedSearchQuery = useDebounce(searchQuery, 200);
+  const [minDate, setMinDate] = React.useState<Date | undefined>(undefined);
+  const [dateInputValue, setDateInputValue] = React.useState("");
+  const [datePickerOpen, setDatePickerOpen] = React.useState(false);
+  const [month, setMonth] = React.useState<Date | undefined>(minDate);
   const [tableVersion, setTableVersion] = React.useState(0);
   const db = usePGlite();
 
-  const query = React.useMemo(
-    () =>
-      debouncedSearchQuery
-        ? `-- version: ${tableVersion}\n
+  const query = React.useMemo(() => {
+    const dateFilter = minDate
+      ? `AND date >= $${debouncedSearchQuery ? 2 : 1}::TIMESTAMPTZ`
+      : "";
+
+    if (debouncedSearchQuery) {
+      return `-- version: ${tableVersion}\n
           WITH search_query AS (SELECT websearch_to_tsquery('english', $1) AS query)
           SELECT
             id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level
           FROM messages, search_query
-          WHERE search @@ search_query.query
+          WHERE search @@ search_query.query ${dateFilter}
           ORDER BY ts_rank_cd(search, search_query.query) ASC
-          LIMIT 100;`
-        : `-- version: ${tableVersion}\n
+          LIMIT 100;`;
+    } else {
+      return `-- version: ${tableVersion}\n
           WITH messages_with_min_date AS (
             SELECT 
               id, subject, author, date, in_reply_to, refs, month_file, path, nlevel(path) AS level,
               MIN(date) OVER (PARTITION BY subject) AS min_subject_date
             FROM messages
+            WHERE 1=1 ${dateFilter}
           )
           SELECT 
             id, subject, author, date, in_reply_to, refs, month_file, path, level
           FROM messages_with_min_date
           ORDER BY min_subject_date, subject, date ASC
-          LIMIT 100;`,
-    [debouncedSearchQuery, tableVersion]
-  );
-  const params = React.useMemo(
-    () => (debouncedSearchQuery ? [debouncedSearchQuery] : []),
-    [debouncedSearchQuery]
-  );
+          LIMIT 100;`;
+    }
+  }, [debouncedSearchQuery, minDate, tableVersion]);
+  const params = React.useMemo(() => {
+    const result: (string | null)[] = [];
+    if (debouncedSearchQuery) {
+      result.push(debouncedSearchQuery);
+    }
+    if (minDate) {
+      // Format as ISO string for TIMESTAMPTZ, setting time to start of day
+      const dateStr = format(minDate, "yyyy-MM-dd");
+      result.push(`${dateStr} 00:00:00+00`);
+    }
+    return result;
+  }, [debouncedSearchQuery, minDate]);
 
   const queryResult = useLiveQuery<Message>(query, params);
 
@@ -114,27 +154,74 @@ export const Messages: React.FC<MessagesProps> = () => {
   return (
     <>
       <div className="font-sans mb-8 space-y-6">
-        {/* Search and Actions */}
-        <div className="flex items-center gap-3">
-          <input
+        {/* Search and Filters */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search messages..."
-            className="flex-1 px-4 py-2 bg-slate-900/50 border border-slate-800 rounded-lg text-slate-50 placeholder-slate-500 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-slate-700 transition-all"
+            className="flex-1 min-w-[200px]"
           />
-          <button
-            onClick={handleCreateTable}
-            className="px-4 py-2 bg-white text-slate-950 hover:bg-slate-100 rounded-lg text-sm font-medium transition-colors"
-          >
+          <div className="relative flex gap-2">
+            <Input
+              value={dateInputValue}
+              placeholder="Tomorrow or next week"
+              className="bg-background pr-10 w-[200px]"
+              onChange={(e) => {
+                setDateInputValue(e.target.value);
+                const parsedDate = parseDate(e.target.value);
+                if (parsedDate) {
+                  setMinDate(parsedDate);
+                  setMonth(parsedDate);
+                } else {
+                  setMinDate(undefined);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setDatePickerOpen(true);
+                }
+              }}
+            />
+            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
+                >
+                  <CalendarIcon className="size-3.5" />
+                  <span className="sr-only">Select date</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto overflow-hidden p-0"
+                align="end"
+                alignOffset={-8}
+                sideOffset={10}
+              >
+                <Calendar
+                  mode="single"
+                  selected={minDate}
+                  captionLayout="dropdown"
+                  month={month}
+                  onMonthChange={setMonth}
+                  onSelect={(date) => {
+                    setMinDate(date);
+                    setDateInputValue(date ? formatDateForDisplay(date) : "");
+                    setDatePickerOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <Button onClick={handleCreateTable} variant="default">
             Create Table
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 bg-slate-800 text-slate-200 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors"
-          >
+          </Button>
+          <Button onClick={handleDelete} variant="destructive">
             Delete All
-          </button>
+          </Button>
         </div>
 
         {/* Progress Section */}
@@ -169,8 +256,6 @@ export const Messages: React.FC<MessagesProps> = () => {
       </div>
       <div className="font-mono">
         {messages.map((row, index) => {
-          // console.log("level", row.level);
-          const hue = simpleHash(row.id) % 360;
           return (
             <React.Fragment key={row.id || index}>
               <div
